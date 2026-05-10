@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yissue Inc — One App, Every Month</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0a0a0a;
+    --white: #f8f7f4;
+    --gray: #8a8a8a;
+    --gray-light: #e8e6e1;
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--sans); background: var(--white); color: var(--black); overflow-x: hidden; }
+
+  /* cursor */
+  .cursor { display: none; }
+
+  /* nav */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 28px 48px; display: flex; justify-content: space-between; align-items: center;
+    mix-blend-mode: multiply;
+  }
+  .nav-logo { font-family: var(--serif); font-size: 20px; letter-spacing: -0.02em; color: var(--black); text-decoration: none; }
+  .nav-links { display: flex; gap: 36px; }
+  .nav-links a {
+    font-size: 13px; font-weight: 400; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--black); text-decoration: none; opacity: 0.5; transition: opacity 0.2s;
+  }
+  .nav-links a:hover { opacity: 1; }
+
+  /* hero */
+  .hero {
+    min-height: 100vh; display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 0 48px 80px; position: relative; overflow: hidden;
+  }
+  .hero-bg-text {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-family: var(--serif); font-size: clamp(120px, 18vw, 260px); font-style: italic;
+    color: transparent; -webkit-text-stroke: 1px rgba(10,10,10,0.07);
+    white-space: nowrap; pointer-events: none; user-select: none; letter-spacing: -0.04em;
+  }
+  .hero-counter {
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--gray); margin-bottom: 24px; display: flex; align-items: center; gap: 12px;
+  }
+  .hero-counter::before { content: ''; display: block; width: 32px; height: 1px; background: var(--gray); }
+  .hero-headline {
+    font-family: var(--serif); font-size: clamp(52px, 7vw, 96px);
+    line-height: 1.0; letter-spacing: -0.03em; max-width: 800px;
+  }
+  .hero-headline em { font-style: italic; color: var(--gray); }
+  .hero-sub {
+    margin-top: 40px; font-size: 15px; font-weight: 300; line-height: 1.7;
+    color: var(--gray); max-width: 360px; margin-left: auto;
+  }
+  .rule { width: 100%; height: 1px; background: var(--gray-light); }
+
+  /* about */
+  .about { padding: 120px 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
+  .about-left .section-label {
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--gray); margin-bottom: 32px; display: flex; align-items: center; gap: 12px;
+  }
+  .about-left .section-label::before { content: ''; display: block; width: 24px; height: 1px; background: var(--gray); }
+  .about-headline { font-family: var(--serif); font-size: clamp(36px, 4vw, 54px); line-height: 1.1; letter-spacing: -0.02em; }
+  .about-headline em { font-style: italic; }
+  .about-right { padding-top: 80px; }
+  .about-body { font-size: 16px; font-weight: 300; line-height: 1.8; color: #444; margin-bottom: 32px; }
+
+  /* stats */
+  .stat-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+    background: var(--gray-light); border: 1px solid var(--gray-light); margin-top: 40px;
+  }
+  .stat { background: var(--white); padding: 28px 24px; }
+  .stat-num {
+    font-family: var(--serif); font-size: 42px; letter-spacing: -0.03em;
+    line-height: 1; margin-bottom: 8px; transition: opacity 0.35s;
+  }
+  .stat-num.flash { opacity: 0.2; }
+  .stat-label { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gray); }
+
+  /* apps */
+  .apps { padding: 0 48px 120px; }
+  .apps-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 56px; padding-top: 80px; border-top: 1px solid var(--gray-light);
+  }
+  .apps-title { font-family: var(--serif); font-size: clamp(32px, 3.5vw, 48px); letter-spacing: -0.02em; }
+  .apps-count { font-size: 13px; color: var(--gray); letter-spacing: 0.06em; }
+
+  .apps-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 1px; background: var(--gray-light); border: 1px solid var(--gray-light);
+  }
+  .app-card {
+    background: var(--white); padding: 40px 36px;
+    position: relative; overflow: hidden; transition: background 0.3s; cursor: pointer;
+  }
+  .app-week { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gray); margin-bottom: 20px; transition: color 0.3s; }
+  .app-icon { width: 48px; height: 48px; border-radius: 12px; margin-bottom: 24px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .app-name { font-family: var(--serif); font-size: 22px; letter-spacing: -0.01em; margin-bottom: 12px; transition: color 0.3s; }
+  .app-desc { font-size: 14px; font-weight: 300; line-height: 1.7; color: #666; margin-bottom: 24px; transition: color 0.3s; }
+  .app-tag {
+    display: inline-block; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 5px 12px; border: 1px solid var(--gray-light); border-radius: 100px;
+    color: var(--gray); margin-right: 4px; margin-bottom: 4px; transition: all 0.3s;
+  }
+  .app-arrow { position: absolute; bottom: 36px; right: 36px; font-size: 20px; opacity: 0; transition: opacity 0.3s; color: var(--black); }
+
+  /* regular card hover */
+  .app-card.regular:hover { background: var(--black); }
+  .app-card.regular:hover .app-week,
+  .app-card.regular:hover .app-name { color: rgba(248,247,244,0.9); }
+  .app-card.regular:hover .app-desc { color: rgba(248,247,244,0.55); }
+  .app-card.regular:hover .app-tag { border-color: rgba(248,247,244,0.2); color: rgba(248,247,244,0.6); }
+  .app-card.regular:hover .app-arrow { opacity: 1; color: var(--white); }
+
+  /* featured */
+  .app-card.featured { background: var(--black); grid-column: span 2; }
+  .app-card.featured .app-week { color: rgba(248,247,244,0.45); }
+  .app-card.featured .app-name { color: rgba(248,247,244,0.95); font-size: 28px; }
+  .app-card.featured .app-desc { color: rgba(248,247,244,0.5); max-width: 460px; }
+  .app-card.featured .app-tag { border-color: rgba(248,247,244,0.18); color: rgba(248,247,244,0.5); }
+  .app-card.featured .app-arrow { opacity: 1; color: rgba(248,247,244,0.7); }
+  .app-card.featured:hover { background: #111; }
+
+  /* coming soon */
+  .app-card.coming {
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center; min-height: 240px;
+  }
+  .coming-label { font-family: var(--serif); font-size: 18px; font-style: italic; color: var(--gray); margin-bottom: 8px; }
+  .coming-sub { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-light); }
+
+  /* process */
+  .process { padding: 80px 48px 120px; border-top: 1px solid var(--gray-light); }
+  .process-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 1px; background: var(--gray-light); border: 1px solid var(--gray-light); margin-top: 56px;
+  }
+  .process-step { background: var(--white); padding: 40px 32px; }
+  .step-num { font-family: var(--serif); font-size: 48px; color: var(--gray-light); letter-spacing: -0.04em; margin-bottom: 20px; line-height: 1; }
+  .step-title { font-size: 15px; font-weight: 500; margin-bottom: 12px; }
+  .step-desc { font-size: 13px; font-weight: 300; line-height: 1.7; color: var(--gray); }
+
+  /* cta */
+  .cta {
+    padding: 120px 48px; background: var(--black);
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .cta-bg {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-family: var(--serif); font-size: clamp(100px,16vw,220px); font-style: italic;
+    color: transparent; -webkit-text-stroke: 1px rgba(248,247,244,0.05);
+    white-space: nowrap; pointer-events: none; letter-spacing: -0.04em;
+  }
+  .cta-label { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(248,247,244,0.4); margin-bottom: 28px; position: relative; z-index: 1; }
+  .cta-headline {
+    font-family: var(--serif); font-size: clamp(40px,5.5vw,76px); line-height: 1.05;
+    letter-spacing: -0.03em; color: var(--white); max-width: 640px; margin-bottom: 48px;
+    position: relative; z-index: 1;
+  }
+  .cta-headline em { font-style: italic; color: rgba(248,247,244,0.45); }
+  .email-form { display: flex; width: 100%; max-width: 440px; position: relative; z-index: 1; }
+  .email-form input {
+    flex: 1; padding: 16px 20px; font-family: var(--sans); font-size: 14px;
+    background: rgba(248,247,244,0.07); border: 1px solid rgba(248,247,244,0.15); border-right: none;
+    color: var(--white); outline: none; transition: border-color 0.2s;
+  }
+  .email-form input::placeholder { color: rgba(248,247,244,0.3); }
+  .email-form input:focus { border-color: rgba(248,247,244,0.4); }
+  .email-form button {
+    padding: 16px 28px; font-family: var(--sans); font-size: 13px; font-weight: 500;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    background: var(--white); color: var(--black); border: none; cursor: pointer; transition: background 0.2s;
+  }
+  .email-form button:hover { background: var(--gray-light); }
+  .email-form button:disabled { opacity: 0.6; }
+
+  /* footer */
+  footer {
+    padding: 40px 48px; display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid var(--gray-light);
+  }
+  .footer-logo { font-family: var(--serif); font-size: 18px; letter-spacing: -0.02em; }
+  .footer-copy { font-size: 12px; color: var(--gray); letter-spacing: 0.04em; }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { font-size: 12px; color: var(--gray); text-decoration: none; letter-spacing: 0.04em; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--black); }
+
+  /* reveal */
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 768px) {
+    nav { padding: 24px; } .nav-links { display: none; }
+    .hero { padding: 0 24px 60px; }
+    .about { grid-template-columns: 1fr; padding: 80px 24px; gap: 40px; }
+    .about-right { padding-top: 0; }
+    .apps { padding: 0 24px 80px; }
+    .apps-grid { grid-template-columns: 1fr; }
+    .app-card.featured { grid-column: span 1; }
+    .process { padding: 60px 24px 80px; }
+    .process-grid { grid-template-columns: 1fr 1fr; }
+    .cta { padding: 80px 24px; }
+    footer { padding: 32px 24px; flex-direction: column; gap: 16px; text-align: center; }
+    .cursor { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+
+<nav>
+  <a href="#" class="nav-logo">Yissue</a>
+  <div class="nav-links">
+    <a href="#apps">Apps</a>
+    <a href="#process">Process</a>
+    <a href="#contact">Contact</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg-text">Monthly</div>
+  <div class="hero-counter">One app, every month</div>
+  <h1 class="hero-headline">
+    We ship<br><em>one thing</em><br>that matters.
+  </h1>
+  <p class="hero-sub">Yissue Inc builds and launches a new app every single month. Focused, purposeful, and always live.</p>
+</section>
+
+<div class="rule"></div>
+
+<!-- ABOUT + STATS -->
+<section class="about" id="about">
+  <div class="about-left reveal">
+    <div class="section-label">About</div>
+    <h2 class="about-headline">Discipline<br>over <em>ideas.</em></h2>
+  </div>
+  <div class="about-right reveal">
+    <p class="about-body">Most ideas never ship. We decided to flip that. Every month, we pick one problem, build the most focused solution possible, and put it in people's hands — no waiting for perfect, no endless roadmaps.</p>
+    <p class="about-body">Yissue is a studio built on the belief that momentum compounds. Twelve apps a year. Some will stick. Some won't. All of them teach us something.</p>
+
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-num" id="stat-shipped">02</div>
+        <div class="stat-label">Apps shipped</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" id="stat-countdown">--</div>
+        <div class="stat-label">Days to next launch</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">01</div>
+        <div class="stat-label">Problem at a time</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" style="font-size:38px;line-height:1.1">&#8734;</div>
+        <div class="stat-label">Room to grow</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- THE COLLECTION -->
+<section class="apps" id="apps">
+  <div class="apps-header reveal">
+    <h2 class="apps-title">The collection</h2>
+    <span class="apps-count" id="apps-count-label">Month 02 — ongoing</span>
+  </div>
+
+  <div class="apps-grid">
+
+    <!-- App 01: Skin AI Analysis (featured, full-width, Live) -->
+    <div class="app-card featured reveal">
+      <div class="app-week">Month 01 — Live</div>
+      <div class="app-icon" style="background:rgba(248,247,244,0.08);font-size:20px">&#10022;</div>
+      <div class="app-name">Skin AI Analysis</div>
+      <div class="app-desc">AI-powered skin analysis and product curation — built exclusively for Shopify. Upload a photo, receive a personalised skin profile, and surface the right products at the right moment inside your store.</div>
+      <span class="app-tag">Shopify</span>
+      <span class="app-tag">AI &middot; Beauty</span>
+      <span class="app-tag">Global</span>
+      <div class="app-arrow">&#8599;</div>
+    </div>
+
+    <!-- App 02: Bible Clock (regular, Coming Soon) -->
+    <div class="app-card regular reveal">
+      <div class="app-week">Month 02 — Coming Soon</div>
+      <div class="app-icon" style="background:#f0ece5;font-size:22px">&#9201;</div>
+      <div class="app-name">Bible Clock</div>
+      <div class="app-desc">A calm, ambient Bible app that matches Scripture to the current time — one verse per minute, all day long. Includes reading mode, nine curated themes, and a random verse draw. Available in Korean, English, Spanish, and Portuguese.</div>
+      <span class="app-tag">iOS</span>
+      <span class="app-tag">Android</span>
+      <span class="app-tag">Widget</span>
+      <span class="app-tag">Global</span>
+      <div class="app-arrow">&#8599;</div>
+    </div>
+
+    <!-- Placeholders -->
+    <div class="app-card coming">
+      <div class="coming-label">Coming soon</div>
+      <div class="coming-sub">Month 03</div>
+    </div>
+    <div class="app-card coming">
+      <div class="coming-label">Coming soon</div>
+      <div class="coming-sub">Month 04</div>
+    </div>
+    <div class="app-card coming">
+      <div class="coming-label">Coming soon</div>
+      <div class="coming-sub">Month 05</div>
+    </div>
+    <div class="app-card coming">
+      <div class="coming-label">Coming soon</div>
+      <div class="coming-sub">Month 06</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="process" id="process">
+  <div class="reveal">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <div style="width:24px;height:1px;background:var(--gray)"></div>
+      <span style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray)">How it works</span>
+    </div>
+    <h2 style="font-family:var(--serif);font-size:clamp(32px,3.5vw,48px);letter-spacing:-0.02em">Thirty days, one ship.</h2>
+  </div>
+  <div class="process-grid reveal">
+    <div class="process-step">
+      <div class="step-num">01</div>
+      <div class="step-title">Week 1 &mdash; Define</div>
+      <div class="step-desc">One problem. One audience. One clear outcome. We research, validate, and lock the scope before writing a single line of code.</div>
+    </div>
+    <div class="process-step">
+      <div class="step-num">02</div>
+      <div class="step-title">Week 2 &mdash; Design &amp; Build</div>
+      <div class="step-desc">Design and development run in parallel. We prototype fast, cut what doesn't belong, and keep only what earns its place.</div>
+    </div>
+    <div class="process-step">
+      <div class="step-num">03</div>
+      <div class="step-title">Week 3 &mdash; Polish</div>
+      <div class="step-desc">Typography, motion, edge cases. The layer most teams skip entirely. We treat it as the product itself.</div>
+    </div>
+    <div class="process-step">
+      <div class="step-num">04</div>
+      <div class="step-title">Week 4 &mdash; Ship &amp; Learn</div>
+      <div class="step-desc">Live. Real users. Real data. We document what we learn and carry every lesson into the next month's build.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta" id="contact">
+  <div class="cta-bg">Subscribe</div>
+  <div class="cta-label">Stay in the loop</div>
+  <h2 class="cta-headline">A new app,<br><em>every month.</em></h2>
+  <form class="email-form" id="subscribe-form">
+    <input type="email" placeholder="your@email.com" id="email-input" required>
+    <button type="submit" id="submit-btn">Subscribe</button>
+  </form>
+  <p id="form-msg" style="margin-top:16px;font-size:13px;color:rgba(248,247,244,0.5);position:relative;z-index:1;min-height:20px"></p>
+</section>
+
+<footer>
+  <div class="footer-logo">Yissue Inc</div>
+  <div class="footer-copy">&copy; <span id="footer-year"></span> Yissue Inc. All rights reserved.</div>
+  <div class="footer-links">
+    <a href="https://x.com/yissue_inc" target="_blank">Twitter</a>
+    <a href="https://github.com/Yissue-inc" target="_blank">GitHub</a>
+    <a href="#">Contact</a>
+  </div>
+</footer>
+
+<script>
+  /* cursor */
+  const cursor = document.getElementById('cursor');
+  let mx = 0, my = 0, cx = 0, cy = 0;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  (function animCursor() {
+    cx += (mx - cx) * 0.15; cy += (my - cy) * 0.15;
+    cursor.style.left = cx + 'px'; cursor.style.top = cy + 'px';
+    requestAnimationFrame(animCursor);
+  })();
+  document.querySelectorAll('a, button, .app-card').forEach(el => {
+    el.addEventListener('mouseenter', () => cursor.classList.add('grow'));
+    el.addEventListener('mouseleave', () => cursor.classList.remove('grow'));
+  });
+
+  /* scroll reveal */
+  const obs = new IntersectionObserver(entries =>
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
+    { threshold: 0.1 }
+  );
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+  /* live stats */
+  (function initStats() {
+    const now   = new Date();
+    const year  = now.getFullYear();
+    const month = now.getMonth();
+
+    document.getElementById('footer-year').textContent = year;
+
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysLeft    = daysInMonth - now.getDate();
+    document.getElementById('stat-countdown').textContent = String(daysLeft).padStart(2, '0');
+
+    const launchYear = 2025, launchMonthIdx = 0;
+    const shipped = Math.max(1, Math.min(
+      (year - launchYear) * 12 + (month - launchMonthIdx) + 1, 12
+    ));
+    document.getElementById('stat-shipped').textContent = String(shipped).padStart(2, '0');
+    document.getElementById('apps-count-label').textContent =
+      'Month ' + String(shipped).padStart(2, '0') + ' — ongoing';
+
+    ['stat-shipped','stat-countdown'].forEach((id, i) => {
+      const el = document.getElementById(id);
+      el.classList.add('flash');
+      setTimeout(() => el.classList.remove('flash'), 80 + i * 120);
+    });
+  })();
+
+  /* Google Sheets form */
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxeiAmVWwx4ZIDlC8kJEPFZO2tnlY9CaJT2k-4KuwOMFFqADa9KqTxFWRKEP-CvjjZQ/exec';
+
+  document.getElementById('subscribe-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const email = document.getElementById('email-input').value.trim();
+    const msg   = document.getElementById('form-msg');
+    const btn   = document.getElementById('submit-btn');
+
+    if (!email) return;
+
+    btn.textContent = 'Sending...';
+    btn.disabled = true;
+
+    try {
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      });
+      msg.textContent = "You're on the list. See you next month.";
+      document.getElementById('email-input').value = '';
+    } catch (err) {
+      msg.textContent = 'Something went wrong. Please try again.';
+    } finally {
+      btn.textContent = 'Subscribe';
+      btn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
