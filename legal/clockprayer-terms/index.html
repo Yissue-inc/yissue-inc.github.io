@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClockPrayer Terms of Service — Yissue Inc</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0a0a0a;
+    --white: #f8f7f4;
+    --gray: #8a8a8a;
+    --gray-light: #e8e6e1;
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); background: var(--white); color: var(--black); overflow-x: hidden; }
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 28px 48px; display: flex; justify-content: space-between; align-items: center;
+    mix-blend-mode: multiply;
+  }
+  .nav-logo { font-family: var(--serif); font-size: 20px; letter-spacing: -0.02em; color: var(--black); text-decoration: none; }
+  .nav-links { display: flex; gap: 36px; }
+  .nav-links a {
+    font-size: 13px; font-weight: 400; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--black); text-decoration: none; opacity: 0.5; transition: opacity 0.2s;
+  }
+  .nav-links a:hover { opacity: 1; }
+  .legal-hero {
+    min-height: 52vh; padding: 160px 48px 72px; position: relative; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .legal-bg-text {
+    position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%);
+    font-family: var(--serif); font-size: clamp(92px, 16vw, 220px); font-style: italic;
+    color: transparent; -webkit-text-stroke: 1px rgba(10,10,10,0.07);
+    white-space: nowrap; pointer-events: none; user-select: none; letter-spacing: -0.04em;
+  }
+  .legal-label {
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--gray); margin-bottom: 24px; display: flex; align-items: center; gap: 12px;
+  }
+  .legal-label::before { content: ''; display: block; width: 32px; height: 1px; background: var(--gray); }
+  h1 {
+    font-family: var(--serif); font-size: clamp(48px, 6vw, 86px);
+    line-height: 1; letter-spacing: -0.03em; max-width: 840px; position: relative;
+  }
+  h1 em { font-style: italic; color: var(--gray); }
+  .rule { width: 100%; height: 1px; background: var(--gray-light); }
+  main {
+    padding: 88px 48px 120px; display: grid; grid-template-columns: minmax(180px, 0.4fr) minmax(0, 760px);
+    gap: 80px; align-items: start;
+  }
+  .meta {
+    position: sticky; top: 112px; font-size: 12px; color: var(--gray);
+    letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.8;
+  }
+  .legal-body { font-size: 16px; font-weight: 300; line-height: 1.85; color: #444; }
+  .legal-body section { padding-bottom: 42px; margin-bottom: 42px; border-bottom: 1px solid var(--gray-light); }
+  .legal-body section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  h2 {
+    font-family: var(--serif); font-size: clamp(26px, 3vw, 38px);
+    line-height: 1.1; letter-spacing: -0.02em; color: var(--black); margin-bottom: 18px;
+  }
+  p { margin-bottom: 16px; }
+  ul { margin: 0 0 16px 20px; }
+  li { margin-bottom: 10px; }
+  a { color: var(--black); text-decoration-color: var(--gray); text-underline-offset: 3px; }
+  footer {
+    padding: 40px 48px; display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid var(--gray-light);
+  }
+  .footer-logo { font-family: var(--serif); font-size: 18px; letter-spacing: -0.02em; }
+  .footer-copy { font-size: 12px; color: var(--gray); letter-spacing: 0.04em; }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { font-size: 12px; color: var(--gray); text-decoration: none; letter-spacing: 0.04em; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--black); }
+  @media (max-width: 768px) {
+    nav { padding: 24px; } .nav-links { gap: 18px; }
+    .legal-hero { min-height: 44vh; padding: 128px 24px 56px; }
+    main { padding: 64px 24px 88px; grid-template-columns: 1fr; gap: 32px; }
+    .meta { position: static; }
+    footer { padding: 32px 24px; flex-direction: column; gap: 16px; text-align: center; }
+    .footer-links { flex-wrap: wrap; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="nav-logo">Yissue</a>
+  <div class="nav-links">
+    <a href="/legal/clockprayer-privacy/">Privacy</a>
+    <a href="mailto:dev@yissue.biz">Contact</a>
+  </div>
+</nav>
+
+<section class="legal-hero">
+  <div class="legal-bg-text">Terms</div>
+  <div class="legal-label">ClockPrayer</div>
+  <h1>Terms of <em>Service.</em></h1>
+</section>
+<div class="rule"></div>
+
+<main>
+  <aside class="meta">
+    Effective June 6, 2026<br>
+    Yissue Inc<br>
+    dev@yissue.biz
+  </aside>
+  <article class="legal-body">
+    <section>
+      <h2>Agreement to Terms</h2>
+      <p>These Terms of Service ("Terms") govern your access to and use of ClockPrayer (the "App"), provided by Yissue Inc ("Yissue," "we," "us," or "our"). By downloading, accessing, or using the App, you agree to these Terms.</p>
+      <p>If you do not agree to these Terms, do not use the App. Questions may be sent to <a href="mailto:dev@yissue.biz">dev@yissue.biz</a>.</p>
+    </section>
+
+    <section>
+      <h2>Eligibility</h2>
+      <p>You must be able to form a binding agreement with us to use the App. ClockPrayer is not intended for children under 13 years of age. If you are under 13, you may not use the App or provide personal information through it.</p>
+    </section>
+
+    <section>
+      <h2>App Purpose</h2>
+      <p>ClockPrayer provides devotional, Bible reading, reflection, notification, and related personal-use features. The App is provided for informational and devotional purposes only and is not professional, medical, legal, financial, counseling, or emergency advice.</p>
+    </section>
+
+    <section>
+      <h2>Accounts and Sign-In</h2>
+      <p>Some features may require an account or authentication through Apple, Google, Kakao, Supabase, or another supported provider. You are responsible for maintaining the confidentiality of your account credentials and for all activity under your account.</p>
+    </section>
+
+    <section>
+      <h2>User Content</h2>
+      <p>You may save notes, preferences, reading progress, or other content through the App. You retain ownership of content you create, but you grant us the limited right to host, process, transmit, and display that content as needed to operate and improve the App.</p>
+      <p>You agree not to upload or share content that is unlawful, harmful, infringing, abusive, or otherwise violates these Terms.</p>
+    </section>
+
+    <section>
+      <h2>Third-Party Services</h2>
+      <p>The App may integrate with or rely on third-party services, including Supabase, Apple, Google, Kakao, and Expo Push Notifications. Your use of third-party services may be subject to their own terms and policies. We are not responsible for third-party services that we do not control.</p>
+    </section>
+
+    <section>
+      <h2>Notifications</h2>
+      <p>If you enable push notifications, the App may send devotional reminders, app updates, or other messages. You can disable notifications through your device settings or App settings where available.</p>
+    </section>
+
+    <section>
+      <h2>Purchases and App Store Terms</h2>
+      <p>If the App offers paid features, subscriptions, or in-app purchases, payments and refunds may be handled by the applicable app store or payment provider. Apple, Google, or other platform terms may apply in addition to these Terms.</p>
+    </section>
+
+    <section>
+      <h2>Acceptable Use</h2>
+      <p>You agree not to misuse the App, interfere with its operation, attempt unauthorized access, reverse engineer the App except where legally permitted, use the App to violate any law, or remove ownership notices from App materials.</p>
+    </section>
+
+    <section>
+      <h2>Intellectual Property</h2>
+      <p>The App, including its design, software, branding, and related materials, is owned by Yissue Inc or its licensors and is protected by intellectual property laws. These Terms do not grant you any rights except the limited right to use the App as permitted here.</p>
+    </section>
+
+    <section>
+      <h2>Privacy</h2>
+      <p>Our Privacy Policy explains how we collect and use information in connection with the App. Please review it at <a href="/legal/clockprayer-privacy/">/legal/clockprayer-privacy/</a>.</p>
+    </section>
+
+    <section>
+      <h2>Disclaimer and Limitation of Liability</h2>
+      <p>The App is provided "as is" and "as available" without warranties of any kind to the fullest extent permitted by law. We do not guarantee that the App will be uninterrupted, error-free, or always available.</p>
+      <p>To the fullest extent permitted by law, Yissue Inc will not be liable for indirect, incidental, special, consequential, exemplary, or punitive damages, or for loss of data, profits, goodwill, or other intangible losses arising from your use of the App.</p>
+    </section>
+
+    <section>
+      <h2>Termination</h2>
+      <p>We may suspend or terminate your access to the App if you violate these Terms, create risk for us or other users, or if we discontinue the App or any feature. You may stop using the App at any time.</p>
+    </section>
+
+    <section>
+      <h2>Changes to These Terms</h2>
+      <p>We may update these Terms from time to time. If we make material changes, we will update the effective date above or provide additional notice where required by law. Continued use of the App after changes means you accept the updated Terms.</p>
+    </section>
+
+    <section>
+      <h2>Contact</h2>
+      <p>For support, legal, privacy, access, or deletion requests, contact Yissue Inc at <a href="mailto:dev@yissue.biz">dev@yissue.biz</a>.</p>
+    </section>
+  </article>
+</main>
+
+<footer>
+  <div class="footer-logo">Yissue Inc</div>
+  <div class="footer-copy">&copy; 2026 Yissue Inc. All rights reserved.</div>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/legal/clockprayer-privacy/">Privacy</a>
+    <a href="mailto:dev@yissue.biz">Contact</a>
+  </div>
+</footer>
+</body>
+</html>

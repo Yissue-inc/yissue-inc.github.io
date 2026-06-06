@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClockPrayer Privacy Policy — Yissue Inc</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0a0a0a;
+    --white: #f8f7f4;
+    --gray: #8a8a8a;
+    --gray-light: #e8e6e1;
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); background: var(--white); color: var(--black); overflow-x: hidden; }
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 28px 48px; display: flex; justify-content: space-between; align-items: center;
+    mix-blend-mode: multiply;
+  }
+  .nav-logo { font-family: var(--serif); font-size: 20px; letter-spacing: -0.02em; color: var(--black); text-decoration: none; }
+  .nav-links { display: flex; gap: 36px; }
+  .nav-links a {
+    font-size: 13px; font-weight: 400; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--black); text-decoration: none; opacity: 0.5; transition: opacity 0.2s;
+  }
+  .nav-links a:hover { opacity: 1; }
+  .legal-hero {
+    min-height: 52vh; padding: 160px 48px 72px; position: relative; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .legal-bg-text {
+    position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%);
+    font-family: var(--serif); font-size: clamp(92px, 16vw, 220px); font-style: italic;
+    color: transparent; -webkit-text-stroke: 1px rgba(10,10,10,0.07);
+    white-space: nowrap; pointer-events: none; user-select: none; letter-spacing: -0.04em;
+  }
+  .legal-label {
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--gray); margin-bottom: 24px; display: flex; align-items: center; gap: 12px;
+  }
+  .legal-label::before { content: ''; display: block; width: 32px; height: 1px; background: var(--gray); }
+  h1 {
+    font-family: var(--serif); font-size: clamp(48px, 6vw, 86px);
+    line-height: 1; letter-spacing: -0.03em; max-width: 840px; position: relative;
+  }
+  h1 em { font-style: italic; color: var(--gray); }
+  .rule { width: 100%; height: 1px; background: var(--gray-light); }
+  main {
+    padding: 88px 48px 120px; display: grid; grid-template-columns: minmax(180px, 0.4fr) minmax(0, 760px);
+    gap: 80px; align-items: start;
+  }
+  .meta {
+    position: sticky; top: 112px; font-size: 12px; color: var(--gray);
+    letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.8;
+  }
+  .legal-body { font-size: 16px; font-weight: 300; line-height: 1.85; color: #444; }
+  .legal-body section { padding-bottom: 42px; margin-bottom: 42px; border-bottom: 1px solid var(--gray-light); }
+  .legal-body section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  h2 {
+    font-family: var(--serif); font-size: clamp(26px, 3vw, 38px);
+    line-height: 1.1; letter-spacing: -0.02em; color: var(--black); margin-bottom: 18px;
+  }
+  p { margin-bottom: 16px; }
+  ul { margin: 0 0 16px 20px; }
+  li { margin-bottom: 10px; }
+  a { color: var(--black); text-decoration-color: var(--gray); text-underline-offset: 3px; }
+  footer {
+    padding: 40px 48px; display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid var(--gray-light);
+  }
+  .footer-logo { font-family: var(--serif); font-size: 18px; letter-spacing: -0.02em; }
+  .footer-copy { font-size: 12px; color: var(--gray); letter-spacing: 0.04em; }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { font-size: 12px; color: var(--gray); text-decoration: none; letter-spacing: 0.04em; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--black); }
+  @media (max-width: 768px) {
+    nav { padding: 24px; } .nav-links { gap: 18px; }
+    .legal-hero { min-height: 44vh; padding: 128px 24px 56px; }
+    main { padding: 64px 24px 88px; grid-template-columns: 1fr; gap: 32px; }
+    .meta { position: static; }
+    footer { padding: 32px 24px; flex-direction: column; gap: 16px; text-align: center; }
+    .footer-links { flex-wrap: wrap; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="nav-logo">Yissue</a>
+  <div class="nav-links">
+    <a href="/legal/clockprayer-terms/">Terms</a>
+    <a href="mailto:dev@yissue.biz">Contact</a>
+  </div>
+</nav>
+
+<section class="legal-hero">
+  <div class="legal-bg-text">Privacy</div>
+  <div class="legal-label">ClockPrayer</div>
+  <h1>Privacy <em>Policy.</em></h1>
+</section>
+<div class="rule"></div>
+
+<main>
+  <aside class="meta">
+    Effective June 6, 2026<br>
+    Yissue Inc<br>
+    dev@yissue.biz
+  </aside>
+  <article class="legal-body">
+    <section>
+      <h2>Overview</h2>
+      <p>This Privacy Policy explains how Yissue Inc ("Yissue," "we," "us," or "our") collects, uses, discloses, and protects information in connection with ClockPrayer (the "App"). By using the App, you agree to the practices described in this Policy.</p>
+      <p>If you have questions or privacy requests, contact us at <a href="mailto:dev@yissue.biz">dev@yissue.biz</a>.</p>
+    </section>
+
+    <section>
+      <h2>Information We Collect</h2>
+      <p>Depending on how you use the App, we may collect or process:</p>
+      <ul>
+        <li>Account information, such as your email address or user identifier, when you sign in or create an account.</li>
+        <li>App content and preferences, such as saved verses, notes, language settings, reading progress, theme choices, and notification preferences.</li>
+        <li>Device and usage information, such as device type, operating system, app version, crash logs, diagnostics, and basic analytics about App performance and feature use.</li>
+        <li>Authentication information from supported sign-in providers, such as Apple, Google, or Kakao, when you choose to use those services.</li>
+        <li>Push notification tokens, if you enable notifications.</li>
+      </ul>
+      <p>We do not intentionally collect sensitive personal information unless you choose to include it in content you save in the App.</p>
+    </section>
+
+    <section>
+      <h2>How We Use Information</h2>
+      <p>We use information to operate, maintain, and improve the App; provide account, sync, and notification features; personalize your experience; troubleshoot issues; protect the App from misuse; respond to support requests; and comply with legal obligations.</p>
+    </section>
+
+    <section>
+      <h2>Third-Party Services</h2>
+      <p>ClockPrayer may rely on third-party services that process information under their own privacy practices and contractual terms. These services may include:</p>
+      <ul>
+        <li>Supabase for authentication, database, storage, and backend infrastructure.</li>
+        <li>Apple for Apple platform services and Sign in with Apple.</li>
+        <li>Google for Google sign-in or related platform services.</li>
+        <li>Kakao for Kakao sign-in or related platform services.</li>
+        <li>Expo Push Notifications for delivering push notifications when enabled.</li>
+      </ul>
+      <p>We do not sell your personal information.</p>
+    </section>
+
+    <section>
+      <h2>Children's Privacy</h2>
+      <p>ClockPrayer is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If you believe a child under 13 has provided personal information to us, please contact us at <a href="mailto:dev@yissue.biz">dev@yissue.biz</a> and we will take appropriate steps to delete it.</p>
+    </section>
+
+    <section>
+      <h2>CCPA and California Privacy Rights</h2>
+      <p>If you are a California resident, you may request access to the personal information we have collected about you, request deletion of your personal information, request correction where applicable, or request information about our disclosure practices. To submit a CCPA access or deletion request, email <a href="mailto:dev@yissue.biz">dev@yissue.biz</a> with the subject line "CCPA Request." We may need to verify your identity before completing your request.</p>
+      <p>We do not sell or share personal information as those terms are commonly used for cross-context behavioral advertising under the CCPA.</p>
+    </section>
+
+    <section>
+      <h2>Data Retention and Security</h2>
+      <p>We retain information only as long as reasonably necessary to provide the App, comply with legal obligations, resolve disputes, and enforce our agreements. We use reasonable administrative, technical, and organizational safeguards, but no method of transmission or storage is completely secure.</p>
+    </section>
+
+    <section>
+      <h2>International Use</h2>
+      <p>Your information may be processed in countries other than where you live. By using the App, you understand that your information may be transferred to and processed in locations where privacy laws may differ from those in your jurisdiction.</p>
+    </section>
+
+    <section>
+      <h2>Changes to This Policy</h2>
+      <p>We may update this Privacy Policy from time to time. If we make material changes, we will update the effective date above or provide additional notice where required by law.</p>
+    </section>
+  </article>
+</main>
+
+<footer>
+  <div class="footer-logo">Yissue Inc</div>
+  <div class="footer-copy">&copy; 2026 Yissue Inc. All rights reserved.</div>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/legal/clockprayer-terms/">Terms</a>
+    <a href="mailto:dev@yissue.biz">Contact</a>
+  </div>
+</footer>
+</body>
+</html>
