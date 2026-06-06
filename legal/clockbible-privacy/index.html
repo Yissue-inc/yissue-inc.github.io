@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClockBible Privacy Policy — Yissue Inc</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0a0a0a;
+    --white: #f8f7f4;
+    --gray: #8a8a8a;
+    --gray-light: #e8e6e1;
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); background: var(--white); color: var(--black); overflow-x: hidden; }
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 28px 48px; display: flex; justify-content: space-between; align-items: center;
+    mix-blend-mode: multiply;
+  }
+  .nav-logo { font-family: var(--serif); font-size: 20px; letter-spacing: -0.02em; color: var(--black); text-decoration: none; }
+  .nav-links { display: flex; gap: 36px; }
+  .nav-links a {
+    font-size: 13px; font-weight: 400; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--black); text-decoration: none; opacity: 0.5; transition: opacity 0.2s;
+  }
+  .nav-links a:hover { opacity: 1; }
+  .legal-hero {
+    min-height: 52vh; padding: 160px 48px 72px; position: relative; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .legal-bg-text {
+    position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%);
+    font-family: var(--serif); font-size: clamp(92px, 16vw, 220px); font-style: italic;
+    color: transparent; -webkit-text-stroke: 1px rgba(10,10,10,0.07);
+    white-space: nowrap; pointer-events: none; user-select: none; letter-spacing: -0.04em;
+  }
+  .legal-label {
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--gray); margin-bottom: 24px; display: flex; align-items: center; gap: 12px;
+  }
+  .legal-label::before { content: ''; display: block; width: 32px; height: 1px; background: var(--gray); }
+  h1 {
+    font-family: var(--serif); font-size: clamp(48px, 6vw, 86px);
+    line-height: 1; letter-spacing: -0.03em; max-width: 840px; position: relative;
+  }
+  h1 em { font-style: italic; color: var(--gray); }
+  .rule { width: 100%; height: 1px; background: var(--gray-light); }
+  main {
+    padding: 88px 48px 120px; display: grid; grid-template-columns: minmax(180px, 0.4fr) minmax(0, 760px);
+    gap: 80px; align-items: start;
+  }
+  .meta {
+    position: sticky; top: 112px; font-size: 12px; color: var(--gray);
+    letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.8;
+  }
+  .legal-body { font-size: 16px; font-weight: 300; line-height: 1.85; color: #444; }
+  .legal-body section { padding-bottom: 42px; margin-bottom: 42px; border-bottom: 1px solid var(--gray-light); }
+  .legal-body section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  h2 {
+    font-family: var(--serif); font-size: clamp(26px, 3vw, 38px);
+    line-height: 1.1; letter-spacing: -0.02em; color: var(--black); margin-bottom: 18px;
+  }
+  p { margin-bottom: 16px; }
+  ul { margin: 0 0 16px 20px; }
+  li { margin-bottom: 10px; }
+  table { width: 100%; border-collapse: collapse; margin: 0 0 16px; font-size: 15px; }
+  th, td { border: 1px solid var(--gray-light); padding: 10px 12px; text-align: left; vertical-align: top; }
+  th { font-weight: 500; color: var(--black); background: rgba(10,10,10,0.03); }
+  a { color: var(--black); text-decoration-color: var(--gray); text-underline-offset: 3px; }
+  footer {
+    padding: 40px 48px; display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid var(--gray-light);
+  }
+  .footer-logo { font-family: var(--serif); font-size: 18px; letter-spacing: -0.02em; }
+  .footer-copy { font-size: 12px; color: var(--gray); letter-spacing: 0.04em; }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { font-size: 12px; color: var(--gray); text-decoration: none; letter-spacing: 0.04em; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--black); }
+  @media (max-width: 768px) {
+    nav { padding: 24px; } .nav-links { gap: 18px; }
+    .legal-hero { min-height: 44vh; padding: 128px 24px 56px; }
+    main { padding: 64px 24px 88px; grid-template-columns: 1fr; gap: 32px; }
+    .meta { position: static; }
+    footer { padding: 32px 24px; flex-direction: column; gap: 16px; text-align: center; }
+    .footer-links { flex-wrap: wrap; justify-content: center; }
+    table { font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="nav-logo">Yissue</a>
+  <div class="nav-links">
+    <a href="/legal/clockprayer-privacy/">ClockPrayer Privacy</a>
+    <a href="mailto:dev@yissue.biz">Contact</a>
+  </div>
+</nav>
+
+<section class="legal-hero">
+  <div class="legal-bg-text">Privacy</div>
+  <div class="legal-label">ClockBible</div>
+  <h1>Privacy <em>Policy.</em></h1>
+</section>
+<div class="rule"></div>
+
+<main>
+  <aside class="meta">
+    Effective June 6, 2026<br>
+    Yissue Inc<br>
+    dev@yissue.biz
+  </aside>
+  <article class="legal-body">
+    <section>
+      <h2>Overview</h2>
+      <p>This Privacy Policy explains how Yissue Inc ("Yissue," "we," "us," or "our") handles information in connection with <strong>ClockBible</strong> (the "App").</p>
+      <p>ClockBible v1.0 is designed as a <strong>local-first Scripture companion</strong>. You can use the App <strong>without creating an account or signing in</strong>.</p>
+      <p>If you have questions or privacy requests, contact us at <a href="mailto:dev@yissue.biz">dev@yissue.biz</a>.</p>
+    </section>
+
+    <section>
+      <h2>What ClockBible Does (v1.0)</h2>
+      <p>ClockBible helps you encounter Bible verses throughout the day. Depending on your device and settings, the App may store information <strong>on your device only</strong>, including:</p>
+      <ul>
+        <li>Language preferences (English, Korean, Spanish, or Portuguese)</li>
+        <li>Saved verses</li>
+        <li>Reflection notes and personal written reflections</li>
+        <li>Reading progress and Topic Scripture selections</li>
+        <li>Theme and display preferences</li>
+        <li>Widget snapshot data (iOS Home Screen / Lock Screen widgets, when you add them)</li>
+      </ul>
+      <p>ClockBible v1.0 <strong>does not</strong> include login, social features, prayer networks, or cloud sync of your saved content.</p>
+    </section>
+
+    <section>
+      <h2>Information Stored on Your Device</h2>
+      <p>When you use ClockBible, the following types of information may be stored <strong>locally on your phone or tablet</strong>:</p>
+      <table>
+        <thead>
+          <tr><th>Category</th><th>Examples</th><th>Where it stays</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Preferences</td><td>Main language, secondary language, theme, clock display options</td><td>On-device app storage</td></tr>
+          <tr><td>Saved content</td><td>Saved verses, reflection notes, freeform notes</td><td>On-device app storage</td></tr>
+          <tr><td>Reading state</td><td>Bible reader position, Topic Scripture theme, reading mode progress</td><td>On-device app storage</td></tr>
+          <tr><td>Widget data (iOS)</td><td>Verse snapshot shown on widgets you add</td><td>Shared app container on device (App Group)</td></tr>
+        </tbody>
+      </table>
+      <p>We do not operate a ClockBible account server in v1.0. <strong>Your saved verses and reflection notes are not uploaded to Yissue servers</strong> as part of normal App use.</p>
+    </section>
+
+    <section>
+      <h2>Information We Do Not Collect in v1.0</h2>
+      <p>For the current version of ClockBible, we <strong>do not</strong> require or collect:</p>
+      <ul>
+        <li>Email addresses or user accounts</li>
+        <li>Passwords or sign-in credentials</li>
+        <li>Social profiles or contacts</li>
+        <li>Location data for tracking purposes</li>
+        <li>Advertising identifiers for cross-app tracking</li>
+        <li>User-generated content synced to Yissue cloud servers</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Optional Device Permissions</h2>
+      <p>ClockBible may request limited device permissions only when a feature needs them:</p>
+      <ul>
+        <li><strong>Photos / media library (optional):</strong> If you choose a future export or save-to-photos feature when available, the App may request access. v1.0 does not require photo access for core use.</li>
+        <li><strong>Notifications (optional):</strong> Not required for core ClockBible v1.0 functionality.</li>
+      </ul>
+      <p>If you deny optional permissions, core Scripture reading, saving, and reflection features can still work using on-device storage.</p>
+    </section>
+
+    <section>
+      <h2>iOS Widgets</h2>
+      <p>On <strong>iOS</strong>, if you add a ClockBible widget, the App writes a compact verse snapshot to a <strong>shared on-device container</strong> so the widget can display Scripture. This data remains on your device and is used only to render your widget. <strong>Android widgets are not offered in v1.0.</strong></p>
+    </section>
+
+    <section>
+      <h2>Third-Party Services</h2>
+      <p>ClockBible v1.0 does <strong>not</strong> use Supabase, social login, or a Yissue-operated cloud database for your saved content.</p>
+      <p>Distribution and platform services may still apply:</p>
+      <ul>
+        <li><strong>Apple App Store</strong> (iOS distribution, updates, and platform policies)</li>
+        <li><strong>Google Play</strong> (Android distribution, updates, and platform policies)</li>
+      </ul>
+      <p>We do not sell your personal information.</p>
+    </section>
+
+    <section>
+      <h2>Children's Privacy</h2>
+      <p>ClockBible is not directed to children under 13. We do not knowingly collect personal information from children under 13. If you believe a child under 13 has contacted us with personal information, email <a href="mailto:dev@yissue.biz">dev@yissue.biz</a> and we will take appropriate steps.</p>
+    </section>
+
+    <section>
+      <h2>Data Retention and Deletion</h2>
+      <p>Because your verses, notes, and preferences are stored <strong>on your device</strong>, you can remove them by deleting individual saved verses or reflection notes inside the App, or by uninstalling ClockBible from your device.</p>
+      <p>If you email us for support, we may retain correspondence only as long as needed to respond.</p>
+    </section>
+
+    <section>
+      <h2>Security</h2>
+      <p>We use reasonable organizational practices for any support communications we receive. Local data on your device is protected by your device's operating system and your device passcode or biometrics. No method of electronic storage is completely secure.</p>
+    </section>
+
+    <section>
+      <h2>International Use</h2>
+      <p>ClockBible is available in English, Korean, Spanish, and Portuguese. If you contact us from outside the United States, your email may be processed in the United States or other locations where we or our service providers operate.</p>
+    </section>
+
+    <section>
+      <h2>Changes to This Policy</h2>
+      <p>We may update this Privacy Policy when ClockBible adds features (for example, optional accounts or cloud sync in a future version). If we make material changes, we will update the effective date above and, where required, provide notice in the App or on this page.</p>
+    </section>
+
+    <section>
+      <h2>Contact</h2>
+      <p><strong>Yissue Inc</strong><br>Email: <a href="mailto:dev@yissue.biz">dev@yissue.biz</a></p>
+    </section>
+  </article>
+</main>
+
+<footer>
+  <div class="footer-logo">Yissue Inc</div>
+  <div class="footer-copy">&copy; 2026 Yissue Inc. All rights reserved.</div>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="mailto:dev@yissue.biz">Contact</a>
+  </div>
+</footer>
+</body>
+</html>
