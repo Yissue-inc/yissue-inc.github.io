@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="유니버설 동키 미트앤그리트를 레퍼런스로 목소리·움직임·대화·유머를 전부 AI로 구현하는 인터랙티브 캐릭터 시스템 구축 계획. 첫 MVP는 토이스토리 버즈.">
+<style>*{box-sizing:border-box}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>토이박스 라이브</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ink:#141620; --ink-2:#414660; --ink-3:#6e7389;
+  --paper:#f4f3f7; --surface:#ffffff; --surface-2:#ebe9f2;
+  --line:#dcd9e8; --line-2:#c6c2d6;
+  --violet:#5b4bd6; --violet-ink:#4636bd; --violet-soft:#ebe8fb;
+  --tan:#a9762f; --tan-soft:#f7eede;
+  --ok:#1c7a4e; --ok-soft:#e0f2e8;
+  --warn:#a86c14; --warn-soft:#fbeed6;
+  --crit:#ac2f2c; --crit-soft:#fbe4e2;
+  --shadow:0 1px 2px rgba(20,22,32,.05), 0 8px 24px -16px rgba(20,22,32,.28);
+  --display:'Bricolage Grotesque','IBM Plex Sans KR',system-ui,sans-serif;
+  --body:'IBM Plex Sans KR',system-ui,-apple-system,sans-serif;
+  --mono:'IBM Plex Mono','IBM Plex Sans KR',ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#eae9f2; --ink-2:#b4b1c6; --ink-3:#8a879e;
+    --paper:#101119; --surface:#181a25; --surface-2:#21242f;
+    --line:#2b2e3d; --line-2:#3b3f52;
+    --violet:#a293ff; --violet-ink:#b7abff; --violet-soft:#241f42;
+    --tan:#d9a463; --tan-soft:#2d2416;
+    --ok:#59c48d; --ok-soft:#152c22;
+    --warn:#e0a44a; --warn-soft:#2e2413;
+    --crit:#ee8078; --crit-soft:#331c1b;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.9);
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#eae9f2; --ink-2:#b4b1c6; --ink-3:#8a879e;
+  --paper:#101119; --surface:#181a25; --surface-2:#21242f;
+  --line:#2b2e3d; --line-2:#3b3f52;
+  --violet:#a293ff; --violet-ink:#b7abff; --violet-soft:#241f42;
+  --tan:#d9a463; --tan-soft:#2d2416;
+  --ok:#59c48d; --ok-soft:#152c22;
+  --warn:#e0a44a; --warn-soft:#2e2413;
+  --crit:#ee8078; --crit-soft:#331c1b;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.9);
+}
+*,*::before,*::after{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--body); font-weight:400; font-size:15.5px; line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--violet-soft); color:var(--violet-ink)}
+a{color:var(--violet-ink); text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--violet); outline-offset:3px; border-radius:3px}
+
+/* ---------- shell ---------- */
+.shell{max-width:1240px; margin:0 auto; padding:0 28px 120px}
+.grid{display:grid; grid-template-columns:1fr; gap:0}
+@media (min-width:1040px){
+  .grid{grid-template-columns:196px minmax(0,1fr); gap:56px; align-items:start}
+}
+
+/* ---------- rail ---------- */
+.rail{display:none}
+@media (min-width:1040px){
+  .rail{display:block; position:sticky; top:0; padding:56px 0; max-height:100vh; overflow-y:auto}
+}
+.rail-title{font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); margin:0 0 14px}
+.rail ol{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:1px}
+.rail a{
+  display:grid; grid-template-columns:22px 1fr; gap:6px; align-items:baseline;
+  text-decoration:none; color:var(--ink-2); font-size:12.5px; line-height:1.45;
+  padding:5px 8px 5px 0; border-left:2px solid transparent; padding-left:10px; transition:color .15s, border-color .15s;
+}
+.rail a span{font-family:var(--mono); font-size:10.5px; color:var(--ink-3)}
+.rail a:hover{color:var(--ink)}
+.rail a.on{color:var(--ink); border-left-color:var(--violet); font-weight:600}
+.rail a.on span{color:var(--violet)}
+
+/* ---------- masthead ---------- */
+.mast{padding:72px 0 40px; border-bottom:1px solid var(--line)}
+.kicker{
+  font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--ink-3); display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:26px;
+}
+.kicker b{color:var(--violet-ink); font-weight:500}
+.kicker i{font-style:normal; width:4px; height:4px; border-radius:50%; background:var(--line-2)}
+h1{
+  font-family:var(--display); font-weight:800; font-size:clamp(34px,5.2vw,58px);
+  line-height:1.08; letter-spacing:-.025em; margin:0; text-wrap:balance; max-width:16ch;
+}
+h1 em{font-style:normal; color:var(--violet)}
+.dek{margin:24px 0 0; max-width:62ch; font-size:17px; font-weight:300; line-height:1.72; color:var(--ink-2)}
+.dek strong{font-weight:600; color:var(--ink)}
+
+/* ---------- tiles ---------- */
+.tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(148px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); margin:40px 0 0; border-radius:8px; overflow:hidden}
+.tile{background:var(--surface); padding:16px 18px}
+.tile dt{font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); margin:0 0 8px}
+.tile dd{margin:0; font-family:var(--display); font-weight:700; font-size:24px; letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+.tile dd small{font-family:var(--body); font-size:12.5px; font-weight:400; color:var(--ink-3); letter-spacing:0}
+
+/* ---------- sections ---------- */
+section{padding:64px 0 0; scroll-margin-top:24px}
+.sec-head{display:flex; align-items:baseline; gap:14px; margin-bottom:8px}
+.sec-num{font-family:var(--mono); font-size:11px; color:var(--violet); letter-spacing:.1em; padding-top:4px}
+h2{font-family:var(--display); font-weight:700; font-size:clamp(23px,3vw,30px); letter-spacing:-.02em; line-height:1.2; margin:0; text-wrap:balance}
+.sec-sub{color:var(--ink-3); font-size:14px; margin:0 0 26px; max-width:60ch}
+h3{font-family:var(--display); font-weight:700; font-size:17.5px; letter-spacing:-.01em; margin:38px 0 10px; text-wrap:balance}
+h4{font-family:var(--body); font-weight:600; font-size:14.5px; margin:24px 0 8px; color:var(--ink)}
+p{margin:0 0 14px; max-width:68ch}
+ul,ol{margin:0 0 16px; padding-left:20px; max-width:68ch}
+li{margin:0 0 6px}
+li::marker{color:var(--ink-3)}
+code{font-family:var(--mono); font-size:.87em; background:var(--surface-2); padding:1px 5px; border-radius:4px; color:var(--violet-ink)}
+strong{font-weight:600}
+hr{border:0; border-top:1px solid var(--line); margin:48px 0 0}
+
+/* ---------- callouts ---------- */
+.note{
+  border:1px solid var(--line); border-left:3px solid var(--tan); background:var(--surface);
+  border-radius:0 8px 8px 0; padding:18px 20px; margin:22px 0; box-shadow:var(--shadow);
+}
+.note.crit{border-left-color:var(--crit)}
+.note.vio{border-left-color:var(--violet)}
+.note-t{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--tan); margin:0 0 8px; font-weight:500}
+.note.crit .note-t{color:var(--crit)}
+.note.vio .note-t{color:var(--violet)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto; margin:20px 0 24px; border:1px solid var(--line); border-radius:8px; background:var(--surface); box-shadow:var(--shadow)}
+table{border-collapse:collapse; width:100%; min-width:520px; font-size:13.5px}
+th,td{text-align:left; padding:10px 14px; border-bottom:1px solid var(--line); vertical-align:top}
+thead th{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--ink-3); font-weight:500; background:var(--surface-2); white-space:nowrap;
+}
+tbody tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap}
+td b{font-weight:600}
+tfoot td{border-top:1px solid var(--line-2); font-weight:600; background:var(--surface-2)}
+
+/* ---------- chips ---------- */
+.chip{
+  display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.06em;
+  padding:2px 7px; border-radius:20px; white-space:nowrap; border:1px solid transparent;
+}
+.chip.ok{background:var(--ok-soft); color:var(--ok); border-color:var(--ok)}
+.chip.warn{background:var(--warn-soft); color:var(--warn); border-color:var(--warn)}
+.chip.crit{background:var(--crit-soft); color:var(--crit); border-color:var(--crit)}
+.chip.n{background:var(--surface-2); color:var(--ink-3); border-color:var(--line-2)}
+.chip.vio{background:var(--violet-soft); color:var(--violet-ink); border-color:var(--violet)}
+
+/* ---------- pipeline ---------- */
+.pipe{display:grid; gap:10px; margin:24px 0 8px; grid-template-columns:1fr}
+@media (min-width:620px){.pipe{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:900px){.pipe{grid-template-columns:repeat(4,1fr)}}
+.stage{
+  background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:14px 15px 15px;
+  position:relative; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:7px;
+}
+.stage-n{font-family:var(--mono); font-size:10px; letter-spacing:.14em; color:var(--violet); text-transform:uppercase}
+.stage h5{font-family:var(--display); font-weight:700; font-size:15px; margin:0; letter-spacing:-.01em}
+.stage h5 small{display:block; font-family:var(--mono); font-size:10px; font-weight:400; color:var(--ink-3); letter-spacing:.1em; margin-top:2px}
+.stage p{font-size:12.5px; line-height:1.6; color:var(--ink-2); margin:0; max-width:none}
+.stage ul{margin:0; padding-left:15px; font-size:12px; color:var(--ink-3); line-height:1.6}
+.stage.brain{border-color:var(--violet); background:var(--violet-soft)}
+.stage.brain p{color:var(--ink-2)}
+
+/* ---------- latency waterfall ---------- */
+.wf{margin:22px 0 10px; border:1px solid var(--line); border-radius:8px; background:var(--surface); padding:18px 20px 14px; box-shadow:var(--shadow)}
+.wf-row{display:grid; grid-template-columns:minmax(120px,1.1fr) minmax(0,3fr) 58px; gap:12px; align-items:center; padding:5px 0; font-size:13px}
+.wf-row .lb{color:var(--ink-2); line-height:1.4}
+.wf-row .ms{font-family:var(--mono); font-variant-numeric:tabular-nums; text-align:right; font-size:12.5px; color:var(--ink)}
+.track{position:relative; height:16px; background:var(--surface-2); border-radius:3px; overflow:hidden}
+.bar{position:absolute; top:0; bottom:0; border-radius:3px; background:var(--violet); opacity:.88}
+.bar.t2{background:var(--tan)}
+.bar.t3{background:var(--ink-3)}
+.wf-total{display:grid; grid-template-columns:minmax(120px,1.1fr) minmax(0,3fr) 58px; gap:12px; margin-top:10px; padding-top:11px; border-top:1px solid var(--line-2); font-size:13px; font-weight:600}
+.wf-total .ms{font-family:var(--mono); text-align:right; font-variant-numeric:tabular-nums}
+.wf-legend{display:flex; flex-wrap:wrap; gap:16px; margin-top:12px; font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; color:var(--ink-3); text-transform:uppercase}
+.wf-legend i{display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:6px; vertical-align:-1px}
+@media (max-width:560px){
+  .wf-row,.wf-total{grid-template-columns:1fr 52px; }
+  .wf-row .track{grid-column:1/-1; order:3}
+}
+
+/* ---------- roadmap ---------- */
+.road{display:flex; flex-direction:column; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:8px; overflow:hidden; margin:22px 0}
+.phase{background:var(--surface); padding:18px 20px; display:grid; gap:12px; grid-template-columns:1fr}
+@media (min-width:760px){.phase{grid-template-columns:190px minmax(0,1fr)}}
+.phase-meta{display:flex; flex-direction:column; gap:6px}
+.phase-w{font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; color:var(--violet); text-transform:uppercase}
+.phase-meta h3{margin:0; font-size:16px}
+.weeks{display:flex; gap:2px; margin-top:4px}
+.weeks i{height:5px; flex:1; border-radius:1px; background:var(--surface-2)}
+.weeks i.f{background:var(--violet)}
+.phase-body p{margin:0 0 10px; font-size:13.5px; color:var(--ink-2)}
+.phase-body ul{margin:0 0 10px; font-size:13.5px}
+.gate{font-size:12.5px; font-family:var(--mono); color:var(--ok); background:var(--ok-soft); border:1px solid var(--ok); border-radius:6px; padding:7px 10px; display:inline-block; line-height:1.5}
+
+/* ---------- scope columns ---------- */
+.scope{display:grid; gap:14px; grid-template-columns:1fr; margin:20px 0}
+@media (min-width:680px){.scope{grid-template-columns:1fr 1fr}}
+.scope>div{border:1px solid var(--line); border-radius:8px; padding:16px 18px; background:var(--surface); box-shadow:var(--shadow)}
+.scope h4{margin:0 0 10px; font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase}
+.scope.in h4,.scope div.in h4{color:var(--ok)}
+.scope div.out h4{color:var(--ink-3)}
+.scope ul{margin:0; font-size:13.5px; padding-left:18px}
+
+/* ---------- code ---------- */
+pre{
+  margin:16px 0 20px; background:var(--surface); border:1px solid var(--line); border-radius:8px;
+  padding:15px 16px; overflow-x:auto; font-family:var(--mono); font-size:12.5px; line-height:1.65;
+  color:var(--ink-2); box-shadow:var(--shadow);
+}
+pre code{background:none; padding:0; color:inherit; font-size:inherit}
+pre b{color:var(--violet-ink); font-weight:500}
+pre i{color:var(--ink-3); font-style:normal}
+
+/* ---------- checklist ---------- */
+.check{list-style:none; padding:0; margin:16px 0 20px; display:flex; flex-direction:column; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:8px; overflow:hidden; max-width:none}
+.check li{margin:0; background:var(--surface); padding:11px 15px; display:grid; grid-template-columns:20px 1fr auto; gap:11px; align-items:baseline; font-size:13.5px}
+.check li::before{content:"☐"; color:var(--ink-3); font-size:14px}
+.check .who{font-family:var(--mono); font-size:10.5px; color:var(--ink-3); letter-spacing:.06em; white-space:nowrap}
+
+/* ---------- footer ---------- */
+footer{margin-top:72px; padding-top:24px; border-top:1px solid var(--line); font-size:12.5px; color:var(--ink-3); max-width:68ch}
+footer p{max-width:none; margin:0 0 8px}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation:none!important; transition:none!important; scroll-behavior:auto!important}
+}
+html{scroll-behavior:smooth}
+</style>
+</head>
+<body>
+
+<div class="shell">
+<div class="grid">
+
+<nav class="rail" aria-label="문서 목차">
+  <p class="rail-title">Contents</p>
+  <ol>
+    <li><a href="#s0"><span>00</span>전제 · 권리</a></li>
+    <li><a href="#s1"><span>01</span>레퍼런스 해부</a></li>
+    <li><a href="#s2"><span>02</span>목표 · 성공 기준</a></li>
+    <li><a href="#s3"><span>03</span>시스템 아키텍처</a></li>
+    <li><a href="#s4"><span>04</span>지연 예산</a></li>
+    <li><a href="#s5"><span>05</span>유머 엔진</a></li>
+    <li><a href="#s6"><span>06</span>안전 · 가드레일</a></li>
+    <li><a href="#s7"><span>07</span>MVP 스코프</a></li>
+    <li><a href="#s8"><span>08</span>17주 로드맵</a></li>
+    <li><a href="#s9"><span>09</span>팀 · 장비 · 예산</a></li>
+    <li><a href="#s10"><span>10</span>운영 원가</a></li>
+    <li><a href="#s11"><span>11</span>리스크</a></li>
+    <li><a href="#s12"><span>12</span>착수 2주</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<header class="mast">
+  <p class="kicker"><b>Project TOYBOX</b> <i></i> 기술 기획서 v0.1 <i></i> 2026-08-31 <i></i> 내부 검토용</p>
+  <h1>사람 없이 <em>연기</em>하는 캐릭터를 만든다</h1>
+  <p class="dek">유니버설의 동키 미트앤그리트는 <strong>숨은 성우가 실시간으로 연기하는</strong> 인터랙티브 퍼펫이다. 이 문서는 그 성우가 하는 일 — 듣고, 보고, 알아채고, 받아치고, 웃기고, 표정과 시선으로 연기하는 것 — 을 하나씩 분해해 AI 파이프라인으로 대체하는 전체 수행 계획이다. 첫 MVP는 <strong>토이스토리 버즈</strong> 1인 대면 키오스크, 목표 기간 17주.</p>
+  <dl class="tiles">
+    <div class="tile"><dt>MVP 기간</dt><dd>17<small> 주</small></dd></div>
+    <div class="tile"><dt>응답 지연 목표</dt><dd>0.9<small> 초 (P50)</small></dd></div>
+    <div class="tile"><dt>구축비 (1대)</dt><dd>0.2<small> 억 원</small></dd></div>
+    <div class="tile"><dt>세션당 원가</dt><dd>120<small> 원</small></dd></div>
+    <div class="tile"><dt>투입 인력</dt><dd>5.5<small> FTE</small></dd></div>
+  </dl>
+</header>
+
+<section id="s0">
+  <div class="sec-head"><span class="sec-num">00</span><h2>시작 전에 정리해야 할 권리 문제</h2></div>
+  <p class="sec-sub">기술보다 먼저 막히는 지점이다. 여기가 안 풀리면 만든 걸 켤 수 없다.</p>
+
+  <div class="note crit">
+    <p class="note-t">먼저 확인</p>
+    <p>버즈 라이트이어·우디는 디즈니/픽사의 저작물이고, 원작 목소리는 배우 개인의 <strong>음성·퍼블리시티권</strong> 대상이다. 이 둘은 별개의 권리라 라이선스도 따로 받아야 한다. 배우 목소리를 그대로 학습·복제한 TTS는 라이선스가 있어도 별도 동의 없이는 쓸 수 없다.</p>
+  </div>
+
+  <p>따라서 처음부터 두 갈래를 병렬로 잡는다. 기술 스택은 어느 쪽이든 동일하고, 바뀌는 것은 <code>persona pack</code> 하나뿐이다 — 이 구조를 3장에서 아키텍처의 최상위 원칙으로 못 박는다.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>트랙</th><th>용도</th><th>필요한 것</th><th>착수</th></tr></thead>
+    <tbody>
+      <tr><td><b>A. 토이스토리 트랙</b></td><td>디즈니 대상 제안·PoC 시연, 라이선스 협상용</td><td>비공개 내부 시연 한정. 배우 목소리 복제 금지, 사운드얼라이크 성우와 별도 계약(학습·상업 이용 명시)</td><td class="num">W1</td></tr>
+      <tr><td><b>B. 오리지널 트랙</b></td><td>공개 시연·투자 유치·자체 IP 상품화</td><td>자체 캐릭터 디자인·보이스·세계관. 권리 100% 자사 귀속</td><td class="num">W2</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>실무적으로는 <strong>B를 기술 검증의 기본 트랙으로 두고, A는 데모 빌드로만</strong> 유지하는 편이 안전하다. 성능 지표(지연·웃음률·인식률)는 캐릭터와 무관하게 측정되므로 검증 가치는 동일하다.</p>
+
+  <p>추가로 초기에 확정할 것: 관람객 영상·음성의 <strong>수집·보관 정책</strong>(6장), 미성년자 촬영 고지, 국내 배치 시 개인정보 보호법상 영상정보처리기기 안내판 의무.</p>
+</section>
+
+<section id="s1">
+  <div class="sec-head"><span class="sec-num">01</span><h2>동키는 실제로 무엇을 하고 있나</h2></div>
+  <p class="sec-sub">성우 한 명이 동시에 처리하는 작업을 항목으로 쪼개면, 그대로 개발 백로그가 된다.</p>
+
+  <p>동키 부스의 성우는 카메라로 관람객을 보면서 실시간으로 대사를 만들고, 동시에 퍼펫의 입과 표정을 조작한다. 관람객이 "살아있다"고 느끼는 이유는 목소리 품질이 아니라 <strong>반응 속도와 관찰의 구체성</strong>이다. 내 모자 색을 언급하고, 3턴 전에 말한 내 이름을 다시 부른다. 이 두 가지가 없으면 아무리 좋은 TTS도 자판기처럼 들린다.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>성우가 하는 일</th><th>난이도</th><th>AI 대체 방식</th><th>단계</th></tr></thead>
+    <tbody>
+      <tr><td>관람객 옷·모자·소품을 즉시 캐치</td><td><span class="chip warn">중</span></td><td>VLM이 인물 크롭을 2fps로 요약해 짧은 속성 리스트로 저장</td><td class="num">P3</td></tr>
+      <tr><td>아이인지 어른인지 눈높이 파악</td><td><span class="chip warn">중</span></td><td>깊이 카메라 + 키포인트로 신장 추정 → 어투·수위 프리셋 전환</td><td class="num">P3</td></tr>
+      <tr><td>이름을 기억했다가 후반에 다시 부름</td><td><span class="chip ok">하</span></td><td>세션 메모리(휘발성 슬롯) + 콜백 규칙</td><td class="num">P1</td></tr>
+      <tr><td>여러 명 중 누가 말했는지 구분</td><td><span class="chip warn">중</span></td><td>마이크 도래각(DOA) + 입 움직임 동기 판정 융합</td><td class="num">P3</td></tr>
+      <tr><td>말하는 사람 쪽으로 시선·몸 방향 전환</td><td><span class="chip warn">중</span></td><td>추적 좌표로 look-at IK, 사케이드·눈깜빡임 절차 생성</td><td class="num">P2</td></tr>
+      <tr><td>말을 끊고 치고 들어가기 / 끊겨도 안 무너지기</td><td><span class="chip crit">상</span></td><td>바지인(barge-in) 처리 + 발화 중단·재개 상태머신</td><td class="num">P2</td></tr>
+      <tr><td>침묵과 타이밍(펀치라인 앞의 0.3초)</td><td><span class="chip crit">상</span></td><td>대사에 beat 토큰 삽입, 오디오 스케줄러가 무음 프레임 재생</td><td class="num">P3</td></tr>
+      <tr><td>즉흥 농담의 수위 조절</td><td><span class="chip crit">상</span></td><td>roast 강도 다이얼 + 대상 나이 추정 + 출력 필터(5장)</td><td class="num">P3</td></tr>
+      <tr><td>예외 상황 대응(우는 아이, 무례한 손님)</td><td><span class="chip crit">상</span></td><td>시나리오 팩 + 오퍼레이터 인계 버튼(수동 대사 재생)</td><td class="num">P4</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note vio">
+    <p class="note-t">설계 결론</p>
+    <p>표에서 <span class="chip crit">상</span>으로 분류된 네 항목 — 바지인, 타이밍, 수위 조절, 예외 대응 — 이 프로젝트의 실제 난이도다. 목소리 합성과 3D 렌더링은 이미 상용 부품으로 해결되는 영역이므로, 인력과 일정을 여기에 쏟지 않도록 스프린트를 배치했다(8장).</p>
+  </div>
+</section>
+
+<section id="s2">
+  <div class="sec-head"><span class="sec-num">02</span><h2>무엇을 달성하면 성공인가</h2></div>
+  <p class="sec-sub">"재밌다"는 합격 기준이 될 수 없다. 관찰 가능한 수치로 바꾼 뒤 매 스프린트 회귀 측정한다.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>지표</th><th>정의 · 측정 방법</th><th class="num">MVP 기준</th><th class="num">최종 목표</th></tr></thead>
+    <tbody>
+      <tr><td><b>응답 지연 P95</b></td><td>관람객 발화 종료 → 캐릭터 첫 오디오 샘플. 파이프라인 자체 타임스탬프</td><td class="num">≤ 1.2 s</td><td class="num">≤ 0.9 s</td></tr>
+      <tr><td><b>체감 반응 시간</b></td><td>발화 종료 → 캐릭터의 첫 반응(백채널·끄덕임 포함)</td><td class="num">≤ 0.4 s</td><td class="num">≤ 0.3 s</td></tr>
+      <tr><td><b>ASR 정확도</b></td><td>배경소음 75 dBA 환경 녹취 200문장 WER</td><td class="num">≤ 20 %</td><td class="num">≤ 12 %</td></tr>
+      <tr><td><b>개인화 발화율</b></td><td>세션당 "관람객 고유 정보"(옷·이름·동행)를 언급한 대사 수</td><td class="num">≥ 2 회</td><td class="num">≥ 4 회</td></tr>
+      <tr><td><b>웃음 반응</b></td><td>세션당 관람객 웃음·미소. 오디오 웃음 분류기 + 관찰자 이중 채점</td><td class="num">≥ 3 회</td><td class="num">≥ 6 회</td></tr>
+      <tr><td><b>대화 지속</b></td><td>세션당 유효 왕복 턴 수(1초 이상 발화 기준)</td><td class="num">≥ 6 턴</td><td class="num">≥ 10 턴</td></tr>
+      <tr><td><b>캐릭터 붕괴</b></td><td>AI·모델·시스템을 자기지칭하거나 페르소나를 벗어난 발화</td><td class="num">0 건</td><td class="num">0 건</td></tr>
+      <tr><td><b>안전 위반</b></td><td>금칙 주제·부적절 표현 발화. 전량 로그 사후 검수</td><td class="num">0 건</td><td class="num">0 건</td></tr>
+      <tr><td><b>연속 가동</b></td><td>무개입 연속 운영 시간(크래시·수동 재시작 없음)</td><td class="num">≥ 4 h</td><td class="num">≥ 10 h</td></tr>
+      <tr><td><b>처리량</b></td><td>시간당 완료 세션 수(세션 타이머 90초 기준)</td><td class="num">≥ 25</td><td class="num">≥ 32</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>이 표는 그대로 <code>packages/eval</code> 회귀 스위트의 정의가 된다. 매 스프린트 종료 시 동일한 시나리오 30세션을 재생해 지표를 갱신하고, 하나라도 기준 아래로 떨어지면 다음 페이즈로 넘어가지 않는다.</p>
+</section>
+
+<section id="s3">
+  <div class="sec-head"><span class="sec-num">03</span><h2>시스템 아키텍처</h2></div>
+  <p class="sec-sub">7개 스테이지의 단방향 스트리밍 파이프라인. 모든 스테이지는 이벤트 버스로만 통신하고, 각각 독립 프로세스로 죽고 살아날 수 있다.</p>
+
+  <div class="pipe">
+    <div class="stage"><span class="stage-n">Stage 1</span><h5>감지<small>SENSE</small></h5><p>카메라·마이크 원신호 취득, 인물 검출·추적·재식별</p><ul><li>YOLO 계열 검출 + ByteTrack</li><li>깊이 기반 거리·신장</li><li>주의(gaze) 판정</li></ul></div>
+    <div class="stage"><span class="stage-n">Stage 2</span><h5>청취<small>LISTEN</small></h5><p>빔포밍·에코 제거·잡음 억제 후 스트리밍 전사</p><ul><li>AEC(자기 목소리 제거) 필수</li><li>VAD + 시맨틱 종료 판정</li><li>DOA로 화자 지정</li></ul></div>
+    <div class="stage"><span class="stage-n">Stage 3</span><h5>관찰<small>OBSERVE</small></h5><p>VLM이 인물 크롭을 짧은 속성 리스트로 요약, 저주기 비동기</p><ul><li>2 fps, 크롭 배치 처리</li><li>옷·소품·동행·표정</li><li>원본 프레임은 미저장</li></ul></div>
+    <div class="stage brain"><span class="stage-n">Stage 4</span><h5>사고<small>THINK</small></h5><p>페르소나 LLM이 대사·감정·제스처·시선을 하나의 구조화 출력으로 생성</p><ul><li>2티어(즉답 + 본선)</li><li>유머 엔진 · 세션 메모리</li><li>입출력 가드레일</li></ul></div>
+    <div class="stage"><span class="stage-n">Stage 5</span><h5>발화<small>SPEAK</small></h5><p>문장 단위 스트리밍 TTS, 캐치프레이즈는 사전 녹음 재생</p><ul><li>TTFB 150 ms 이하</li><li>감정·강조 제어</li><li>beat(무음) 삽입</li></ul></div>
+    <div class="stage"><span class="stage-n">Stage 6</span><h5>연기<small>ACT</small></h5><p>오디오→비지메 립싱크, 감정→블렌드셰이프, 시선 IK, 제스처 클립 블렌딩</p><ul><li>오디오와 프레임 동기</li><li>아이들 행동 트리</li><li>마이크로 표정 노이즈</li></ul></div>
+    <div class="stage"><span class="stage-n">Stage 7</span><h5>송출<small>SHOW</small></h5><p>60 fps 렌더 · 사운드 출력 · 조명 큐 · 오퍼레이터 콘솔</p><ul><li>세션 타이머·큐 관리</li><li>원터치 안전 정지</li><li>텔레메트리 수집</li></ul></div>
+    <div class="stage"><span class="stage-n">Cross</span><h5>퍼소나 팩<small>PERSONA PACK</small></h5><p>캐릭터에 종속되는 모든 것을 한 폴더에 격리. IP가 바뀌면 이것만 교체</p><ul><li>프롬프트·세계관·금칙</li><li>보이스 모델·사전녹음</li><li>3D 리그·제스처 클립</li></ul></div>
+  </div>
+
+  <h3>스테이지별 기술 선택</h3>
+  <p>각 항목은 <strong>후보</strong>이며, P1에서 동일 조건 벤치마크(지연·정확도·비용)를 돌려 확정한다. 클라우드 API는 지연·가용성 리스크가 있으므로 <strong>모든 구간에 온프레미스 폴백을 하나씩</strong> 확보하는 것을 원칙으로 한다.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>구간</th><th>1순위 후보</th><th>온프레미스 폴백</th><th>결정 기준</th></tr></thead>
+    <tbody>
+      <tr><td>음성 인식</td><td>스트리밍 상용 ASR(한·영 동시)</td><td>Whisper 계열 turbo, GPU 상주</td><td>75 dBA 소음 WER, 부분전사 지연</td></tr>
+      <tr><td>발화 종료 판정</td><td>Silero VAD + 부분전사 기반 시맨틱 엔드포인팅</td><td>동일(로컬 실행)</td><td>말 끊김 오탐률, 종료 지연</td></tr>
+      <tr><td>언어 모델</td><td>Claude(<code>claude-sonnet-5</code> 상시 / <code>claude-opus-5</code> 대본 생성)</td><td>로컬 소형 모델 + 대사 팩 폴백</td><td>TTFT, 캐릭터 유지력, 프롬프트 캐시 적중률</td></tr>
+      <tr><td>음성 합성</td><td>초저지연 스트리밍 TTS(보이스 클로닝 지원)</td><td>자체 파인튜닝 모델(성우 녹음 기반)</td><td>TTFB, 캐릭터 유사도 MOS</td></tr>
+      <tr><td>립싱크</td><td>오디오→블렌드셰이프 실시간 추론</td><td>음소→비지메 규칙 매핑</td><td>동기 오차 ±40 ms 이내</td></tr>
+      <tr><td>렌더</td><td>Unreal Engine 5, 커스텀 스타일라이즈드 리그</td><td>—</td><td>60 fps 고정, 프레임 드랍 0</td></tr>
+      <tr><td>비전</td><td>검출·추적 TensorRT 로컬 / 속성 요약은 VLM API</td><td>속성 요약도 로컬 VLM</td><td>추적 유지율, 요약 지연 400 ms 이하</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>이벤트 스키마</h3>
+  <p>스테이지 간 결합을 끊는 핵심이다. 모든 메시지는 타임스탬프와 세션 ID를 갖고, 콘솔·로그·평가 하네스가 같은 스트림을 구독한다.</p>
+<pre><code><b>// Stage 2 → Bus</b>
+{"t":"<b>utterance.final</b>","session":"s_9f3","speaker":"guest_2",
+ "text":"버즈! 나 저기서 우주선 봤어","lang":"ko","conf":0.91,"ts":1756...}
+
+<b>// Stage 3 → Bus (비동기, 대사 생성과 독립)</b>
+{"t":"<b>scene.summary</b>","people":2,"focus":"guest_2",
+ "attrs":{"height":"child","wearing":["빨간 모자","공룡 티셔츠"],"holding":"풍선"},
+ "companions":[{"id":"guest_1","height":"adult","relation_guess":"보호자"}],"ts":1756...}
+
+<b>// Stage 4 → Bus (LLM 구조화 출력 = 연기 지시서)</b>
+{"t":"<b>perform</b>","session":"s_9f3",
+ "say":"우주선이라고?! <i>[beat]</i> ...그건 내 예비 착륙선이다, 공룡 티셔츠 대원.",
+ "emotion":"alert_proud","gesture":"salute","gaze":"guest_2",
+ "beats":[{"after_char":9,"ms":320}],"humor_src":"observation","risk":"low"}</code></pre>
+
+  <h3>대사 생성 프롬프트 구조</h3>
+  <p>시스템 프롬프트는 <strong>고정 블록(캐시)</strong>과 <strong>가변 블록</strong>을 분리해 매 턴 캐시 적중을 노린다. 고정 블록은 세션 내내 바이트 단위로 동일해야 한다.</p>
+<pre><code><i># 고정 블록 (프롬프트 캐시 대상, 약 3k 토큰)</i>
+  1. 정체성      캐릭터가 자신을 어떻게 인식하는지, 무엇을 모르는지
+  2. 말투 규칙   문장 길이 상한, 어미, 금지 어휘, 캐치프레이즈 사용 빈도
+  3. 세계관 사실 캐릭터가 아는 것 / 절대 모르는 것(현실 세계 지식 차단)
+  4. 유머 규칙   웃음 소스 4종과 사용 조건, roast 강도 정의(5장)
+  5. 금칙        주제·표현 블랙리스트, 회피 대사 30종(인 캐릭터)
+  6. 출력 계약   perform 이벤트 JSON 스키마와 필드 제약
+
+<i># 가변 블록 (매 턴 갱신, 약 300~500 토큰)</i>
+  7. 장면 요약   scene.summary 최신값
+  8. 세션 메모리 이름·언급된 사실·이미 쓴 농담 목록(재사용 금지)
+  9. 최근 3턴   관람객 발화와 캐릭터 대사
+ 10. 상황 신호  대기줄 길이, 세션 경과 시간, 남은 시간</code></pre>
+
+  <div class="note vio">
+    <p class="note-t">중요한 제약 하나</p>
+    <p>대사 길이 상한을 <strong>문장 2개·40자 내외</strong>로 강제한다. 모델은 놔두면 길게 말하고, 길어지는 순간 대화가 아니라 안내방송이 된다. 짧은 대사는 지연·비용·처리량 세 지표를 동시에 개선한다.</p>
+  </div>
+</section>
+
+<section id="s4">
+  <div class="sec-head"><span class="sec-num">04</span><h2>지연 예산</h2></div>
+  <p class="sec-sub">사람 대화의 턴 간격은 보통 0.2~0.5초다. 1.5초를 넘기면 관람객은 고장 났다고 판단하고 자리를 뜬다. 900 ms를 총예산으로 잡고 구간별로 쪼갠다.</p>
+
+  <div class="wf">
+    <div class="wf-row"><span class="lb">발화 종료 판정<br><span style="font-size:11px;color:var(--ink-3)">VAD + 시맨틱 엔드포인팅</span></span><span class="track"><span class="bar t2" style="left:0%;width:20%"></span></span><span class="ms">180</span></div>
+    <div class="wf-row"><span class="lb">전사 확정<br><span style="font-size:11px;color:var(--ink-3)">부분전사 이미 보유, 확정만</span></span><span class="track"><span class="bar t2" style="left:20%;width:6.7%"></span></span><span class="ms">60</span></div>
+    <div class="wf-row"><span class="lb">컨텍스트 조립<br><span style="font-size:11px;color:var(--ink-3)">메모리 병합 + 입력 가드</span></span><span class="track"><span class="bar t3" style="left:26.7%;width:4.4%"></span></span><span class="ms">40</span></div>
+    <div class="wf-row"><span class="lb">LLM 첫 토큰<br><span style="font-size:11px;color:var(--ink-3)">프롬프트 캐시 적중 전제</span></span><span class="track"><span class="bar" style="left:31.1%;width:37.8%"></span></span><span class="ms">340</span></div>
+    <div class="wf-row"><span class="lb">첫 문장 완결<br><span style="font-size:11px;color:var(--ink-3)">문장 경계에서 즉시 TTS 호출</span></span><span class="track"><span class="bar t3" style="left:68.9%;width:6.7%"></span></span><span class="ms">60</span></div>
+    <div class="wf-row"><span class="lb">TTS 첫 오디오<br><span style="font-size:11px;color:var(--ink-3)">스트리밍 TTFB</span></span><span class="track"><span class="bar" style="left:75.6%;width:14.4%"></span></span><span class="ms">130</span></div>
+    <div class="wf-row"><span class="lb">전송 · 립싱크 정렬<br><span style="font-size:11px;color:var(--ink-3)">오디오 버퍼 + 프레임 동기</span></span><span class="track"><span class="bar t2" style="left:90%;width:10%"></span></span><span class="ms">90</span></div>
+    <div class="wf-total"><span>합계 (첫 소리까지)</span><span></span><span class="ms">900 ms</span></div>
+    <p class="wf-legend"><span><i style="background:var(--violet)"></i>모델 추론</span><span><i style="background:var(--tan)"></i>오디오 입출력</span><span><i style="background:var(--ink-3)"></i>오케스트레이션</span></p>
+  </div>
+
+  <h3>체감 지연을 절반으로 줄이는 세 가지</h3>
+  <ol>
+    <li><strong>즉시 백채널.</strong> 발화 종료를 감지한 순간(≈180 ms) 사전 녹음된 짧은 반응 — "오?", "잠깐만", 숨 들이키는 소리 — 을 무조건 재생한다. 본 대사가 준비되면 자연스럽게 이어 붙인다. 체감 반응 시간이 0.9초에서 0.3초대로 떨어진다.</li>
+    <li><strong>생각하는 연기.</strong> 백채널과 동시에 고개를 살짝 기울이거나 눈을 굴리는 아이들 클립을 재생한다. 사람은 상대가 "생각 중"이라는 신호를 받으면 기다림을 지연으로 인식하지 않는다.</li>
+    <li><strong>문장 단위 파이프라이닝.</strong> LLM 출력이 끝날 때까지 기다리지 않고 첫 문장 경계에서 TTS를 시작한다. 두 번째 문장은 첫 문장이 재생되는 동안 합성된다.</li>
+  </ol>
+
+  <div class="note">
+    <p class="note-t">계측 원칙</p>
+    <p>모든 스테이지는 이벤트에 <code>ts_in</code>·<code>ts_out</code>을 찍는다. 지연은 추정하지 않고 <strong>세션 단위 히스토그램</strong>으로만 이야기한다. P50이 아니라 P95를 회의 지표로 쓴다 — 평균이 좋아도 20세션 중 1번 멈추면 실패다.</p>
+  </div>
+</section>
+
+<section id="s5">
+  <div class="sec-head"><span class="sec-num">05</span><h2>유머 엔진</h2></div>
+  <p class="sec-sub">이 프로젝트의 유일한 차별점이자 가장 어려운 부분. "재밌게 해줘"라고 프롬프트에 쓰는 것으로는 절대 되지 않는다.</p>
+
+  <p>LLM에게 자유롭게 농담을 시키면 두 가지가 일어난다. 어디서 본 듯한 일반 개그를 하거나, 수위를 잘못 잡는다. 해결책은 <strong>웃음의 재료를 시스템이 공급하고, 모델에게는 조립만 시키는</strong> 것이다.</p>
+
+  <h3>웃음의 네 가지 소스</h3>
+  <div class="tw"><table>
+    <thead><tr><th>소스</th><th>재료 공급자</th><th>예시 (버즈)</th><th>MVP</th></tr></thead>
+    <tbody>
+      <tr><td><b>관찰</b><br>눈앞의 구체적 사실</td><td>Stage 3 VLM 속성 리스트</td><td>"공룡 티셔츠라니. 자네, 렉스랑 같은 부대인가?"</td><td><span class="chip ok">포함</span></td></tr>
+      <tr><td><b>캐논</b><br>캐릭터 고유의 착각·집착</td><td>퍼소나 팩의 세계관 규칙</td><td>(장난감이라는 지적에) "장난감? ...스텔스 위장 모드다."</td><td><span class="chip ok">포함</span></td></tr>
+      <tr><td><b>콜백</b><br>앞에서 나온 말 되돌리기</td><td>세션 메모리 슬롯</td><td>"아까 우주선 봤다던 그 대원, 보고 마저 하게."</td><td><span class="chip warn">2차</span></td></tr>
+      <tr><td><b>상황</b><br>지금 이 자리의 맥락</td><td>대기줄·시간·날씨 신호</td><td>"뒤에 열두 명 대기 중이다. 은하 평화가 바쁘군."</td><td><span class="chip n">3차</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>구조와 타이밍</h3>
+  <p>대사는 <code>셋업 → beat → 펀치</code> 3부 구조를 출력 계약에 강제한다. 핵심은 beat다. 펀치라인 직전 250~400 ms의 무음이 있고 없고가 같은 문장의 성패를 가른다. Stage 5의 오디오 스케줄러가 <code>beats</code> 배열을 받아 무음 프레임을 삽입하고, Stage 6은 그 구간에 "뜸 들이는" 표정 클립을 얹는다.</p>
+
+  <h3>roast 강도 다이얼</h3>
+  <p>관람객을 살짝 놀리는 것이 재미의 대부분인데, 여기가 사고 지점이기도 하다. 0~3 단계로 정의하고 <strong>대상 추정 나이·동행 구성·직전 반응</strong>으로 자동 조절한다.</p>
+  <div class="tw"><table>
+    <thead><tr><th class="num">강도</th><th>허용 범위</th><th>자동 적용 조건</th></tr></thead>
+    <tbody>
+      <tr><td class="num">0</td><td>놀림 없음. 칭찬·환영만</td><td>미취학 추정, 우는 아이, 첫 3초</td></tr>
+      <tr><td class="num">1</td><td>선택한 물건·옷차림을 가볍게 언급</td><td>기본값</td></tr>
+      <tr><td class="num">2</td><td>관람객의 말·행동을 되받아치기</td><td>성인, 관람객이 먼저 농담을 걸었을 때</td></tr>
+      <tr><td class="num">3</td><td>캐릭터가 지는 자학 개그(관람객은 대상 아님)</td><td>웃음 반응 2회 이상 감지 후</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note crit">
+    <p class="note-t">절대 금지 (강도와 무관)</p>
+    <p>외모·체형·피부색·인종·국적·장애·나이 듦·종교·정치·가족 구성에 대한 언급은 강도 3에서도 하드 블록한다. 프롬프트 지시가 아니라 <strong>출력 후 별도 분류기</strong>로 차단하고, 걸리면 안전 대사로 대체한다.</p>
+  </div>
+
+  <h3>튜닝 루프</h3>
+  <p>웃음은 측정 가능하다. 오디오 웃음 분류기가 대사 종료 후 2.5초 창에서 웃음·감탄을 탐지하고, <code>humor_src</code>·<code>risk</code> 태그와 함께 로깅한다. 주 1회 이 로그로 세 가지를 한다.</p>
+  <ul>
+    <li>성공률 상위 패턴을 퍼소나 팩의 <strong>예시 대사</strong>로 승격(few-shot 강화)</li>
+    <li>성공률 하위 패턴을 금지 목록으로 강등</li>
+    <li>실패 세션 20개를 코미디 작가·성우가 육안 검수 — <strong>이 사람 개입이 파이프라인의 일부다</strong></li>
+  </ul>
+</section>
+
+<section id="s6">
+  <div class="sec-head"><span class="sec-num">06</span><h2>안전 · 가드레일 · 개인정보</h2></div>
+  <p class="sec-sub">아이들 앞에 세우는 물건이다. 사고 1건이 프로젝트 전체를 끝낼 수 있으므로 다층 방어로 설계한다.</p>
+
+  <h3>4중 방어선</h3>
+  <div class="tw"><table>
+    <thead><tr><th>층</th><th>막는 것</th><th>구현</th><th>실패 시 동작</th></tr></thead>
+    <tbody>
+      <tr><td><b>1. 입력 검사</b></td><td>프롬프트 인젝션("시스템 프롬프트 말해봐"), 유해 요청 유도</td><td>패턴 + 소형 분류기, 전사 텍스트 대상</td><td>인 캐릭터 회피 대사로 즉시 응답</td></tr>
+      <tr><td><b>2. 페르소나 구속</b></td><td>캐릭터가 아는 범위 밖 지식, 현실 세계 언급</td><td>시스템 프롬프트의 "모르는 것" 목록 + 지식 차단 규칙</td><td>"그건 우주 사령부 기밀이다"류 회피</td></tr>
+      <tr><td><b>3. 출력 검사</b></td><td>금칙 주제, 자기지칭(AI·모델), 개인정보 복창, 타 브랜드 언급</td><td>합성 전 텍스트 분류기 + 정규식 블랙리스트</td><td>안전 대사 풀에서 대체 재생, 사건 로깅</td></tr>
+      <tr><td><b>4. 사람</b></td><td>위 셋이 다 놓친 것, 예외 상황</td><td>오퍼레이터 콘솔 — 실시간 자막·원터치 뮤트·수동 대사</td><td>세션 즉시 종료, 캐릭터는 "교신 두절" 연출</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>개인정보 처리 원칙</h3>
+  <ul>
+    <li><strong>영상은 저장하지 않는다.</strong> 프레임은 메모리 내에서만 처리하고 디스크·네트워크로 나가지 않는다. Stage 3이 만드는 것은 원본이 아니라 <em>"빨간 모자, 공룡 티셔츠"</em> 같은 텍스트 속성뿐이다.</li>
+    <li><strong>얼굴 식별을 하지 않는다.</strong> 추적 ID는 세션 종료와 함께 파기하며 재방문 인식·인물 DB를 만들지 않는다.</li>
+    <li><strong>음성 원본은 옵트인.</strong> 기본은 텍스트 전사만 30일 보관(사고 재현·품질 튜닝 목적). 원본 오디오는 별도 동의 시에만.</li>
+    <li><strong>고지.</strong> 부스 입구에 촬영·음성 처리 안내판, 보호자용 QR 상세 고지. 국내 설치 시 영상정보처리기기 안내 의무 충족.</li>
+    <li><strong>미성년자.</strong> 나이 추정은 어투 조절 목적으로만 쓰고 저장·전송하지 않는다.</li>
+  </ul>
+
+  <h3>예외 시나리오 팩</h3>
+  <p>퍼소나 팩에 미리 작성해 두는 대응 대본. 모델이 즉흥으로 처리하게 두지 않는다.</p>
+  <ul>
+    <li>아이가 울음 → 즉시 강도 0, 목소리 톤 다운, 보호자 쪽으로 시선 전환</li>
+    <li>욕설·성적 발언 → 못 들은 척 화제 전환 1회 → 반복 시 세션 종료 신호</li>
+    <li>"너 사람이야? AI야?" → 인 캐릭터 회피(캐릭터는 자기가 진짜라고 믿음)</li>
+    <li>침묵 8초 → 먼저 말 걸기 1회 → 15초 → 마무리 대사 후 세션 종료</li>
+    <li>ASR 연속 실패 3회 → "통신 상태가 안 좋군" + 오퍼레이터 알림</li>
+    <li>시스템 장애 → 사전 녹음 루프 재생 + 콘솔 경보 (관람객은 눈치채지 못하게)</li>
+  </ul>
+</section>
+
+<section id="s7">
+  <div class="sec-head"><span class="sec-num">07</span><h2>MVP: 버즈 라이트이어 1인 대면 키오스크</h2></div>
+  <p class="sec-sub">17주 안에 "살아있다"는 반응을 받아내는 것이 목표. 그 외 모든 욕심은 2차로 미룬다.</p>
+
+  <h3>왜 우디가 아니라 버즈인가</h3>
+  <ul>
+    <li><strong>즉흥 구조가 이미 캐릭터에 내장돼 있다.</strong> 자신을 진짜 우주 레인저라고 믿는 설정 자체가 개그 엔진이다. 관람객이 "너 장난감이잖아"라고 말하는 순간 캐논 유머가 자동으로 발동한다 — 모델이 창의적일 필요가 없다.</li>
+    <li><strong>말투가 규칙화하기 쉽다.</strong> 군대식 짧은 문장, 보고 형식, 고정 캐치프레이즈. 40자 제한과 궁합이 좋고 캐릭터 붕괴 판정도 쉽다.</li>
+    <li><strong>립싱크가 관대하다.</strong> 딱딱한 플라스틱 재질의 단순한 입 모양이라 비지메 오차가 눈에 덜 띈다. P2 리스크를 크게 줄인다.</li>
+    <li><strong>모르는 게 자연스럽다.</strong> 현실 세계 지식을 차단해야 하는데(6장), 버즈는 원래 세상 물정을 모른다. 가드레일이 캐릭터성으로 위장된다.</li>
+  </ul>
+  <p>우디는 P4 이후 <strong>두 번째 퍼소나 팩</strong>으로 추가해 팩 교체 구조를 검증하는 용도로 쓴다.</p>
+
+  <div class="scope">
+    <div class="in">
+      <h4>범위에 포함</h4>
+      <ul>
+        <li>1:1 대면(동행 1명까지 인지, 대화 상대는 1명)</li>
+        <li>한국어 주 언어 + 영어 인식·응답</li>
+        <li>세션 90초, 유효 6턴 이상</li>
+        <li>세로형 대형 디스플레이 + 실시간 3D 렌더</li>
+        <li>유머 소스 2종(관찰·캐논)</li>
+        <li>시선 추적, 표정, 상반신 제스처</li>
+        <li>오퍼레이터 상주 운영</li>
+        <li>4중 가드레일 전부</li>
+      </ul>
+    </div>
+    <div class="out">
+      <h4>범위에서 제외 (2차 이후)</h4>
+      <ul>
+        <li>애니매트로닉스·물리 퍼펫</li>
+        <li>다인 동시 대화, 그룹 진행</li>
+        <li>캐릭터 이동·전신 보행</li>
+        <li>사진 촬영·굿즈·앱 연동</li>
+        <li>무인 운영(오퍼레이터 제거)</li>
+        <li>다국어 3개 이상</li>
+        <li>재방문 인식(개인정보 원칙상 영구 제외)</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>MVP 수용 기준</h3>
+  <p>아래 7개를 <strong>사내 관람객 100명 연속 테스트</strong>에서 모두 만족하면 MVP 완료로 선언한다.</p>
+  <div class="tw"><table>
+    <thead><tr><th class="num">#</th><th>기준</th><th class="num">임계값</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td>응답 지연 P95 (발화 종료 → 첫 오디오)</td><td class="num">≤ 1.2 s</td></tr>
+      <tr><td class="num">2</td><td>체감 반응(백채널 포함) P95</td><td class="num">≤ 0.4 s</td></tr>
+      <tr><td class="num">3</td><td>캐릭터 붕괴 발화</td><td class="num">0 건 / 100세션</td></tr>
+      <tr><td class="num">4</td><td>안전 필터 미검출 부적절 발화</td><td class="num">0 건 / 100세션</td></tr>
+      <tr><td class="num">5</td><td>관찰 기반 개인화 대사</td><td class="num">평균 ≥ 2 회/세션</td></tr>
+      <tr><td class="num">6</td><td>웃음·미소 반응(이중 채점)</td><td class="num">평균 ≥ 3 회/세션</td></tr>
+      <tr><td class="num">7</td><td>무개입 연속 가동</td><td class="num">≥ 4 h</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="s8">
+  <div class="sec-head"><span class="sec-num">08</span><h2>17주 로드맵</h2></div>
+  <p class="sec-sub">각 페이즈는 게이트로 닫힌다. 게이트를 통과하지 못하면 다음 페이즈를 시작하지 않고 범위를 줄인다 — 일정을 늘리는 것보다 스코프를 깎는 쪽이 항상 낫다.</p>
+  <div class="road">
+    <div class="phase">
+      <div class="phase-meta">
+        <span class="phase-w">P0 · W1–W2</span>
+        <h3 style="margin:0;font-size:16px">기반 다지기</h3>
+        <span class="weeks" aria-hidden="true"><i class="f"></i><i class="f"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+      </div>
+      <div class="phase-body">
+        <p>권리 트랙 확정, 성공 지표 계측 방법 합의, 하드웨어 발주. 코드를 쓰기 전에 되돌릴 수 없는 결정부터 끝낸다.</p>
+        <ul>
+          <li>권리 트랙 A/B 결정 및 성우 후보 오디션(사운드얼라이크 계약 조건 포함)</li>
+          <li>KPI 10개의 측정 코드 정의 — 측정할 수 없는 지표는 이 시점에 버린다</li>
+          <li>GPU 워크스테이션·카메라·마이크 어레이 발주(리드타임 4~6주 가정)</li>
+          <li>퍼소나 팩 스키마 확정 — 이후 모든 캐릭터 자산이 이 형식을 따른다</li>
+          <li>현장 소음 실측: 배치 예정 공간에서 dBA 프로파일과 잔향 녹음 확보</li>
+        </ul>
+        <span class="gate">GATE — 권리 트랙 문서화 + 지표 정의 코드 머지 + 발주 완료</span>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-meta">
+        <span class="phase-w">P1 · W3–W6</span>
+        <h3 style="margin:0;font-size:16px">대화 코어</h3>
+        <span class="weeks" aria-hidden="true"><i></i><i></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+      </div>
+      <div class="phase-body">
+        <p>화면도 3D도 없다. 노트북 + 헤드셋으로 '말이 되는 대화'만 만든다. 여기서 재미가 안 나오면 아바타를 붙여도 안 난다.</p>
+        <ul>
+          <li>ASR·LLM·TTS 왕복 스트리밍 연결, 문장 단위 파이프라이닝 구현</li>
+          <li>퍼소나 팩 v1: 정체성·말투·세계관·금칙·회피 대사 30종 작성(성우/작가 참여)</li>
+          <li>지연 계측 하네스 — 구간별 ts_in/ts_out 히스토그램 대시보드</li>
+          <li>구간별 벤치마크 3종(ASR·LLM·TTS) 실행 후 1순위 스택 확정</li>
+          <li>세션 메모리 슬롯과 콜백 규칙 구현</li>
+          <li>입력·출력 가드레일 1차, 안전 대사 폴백 경로</li>
+        </ul>
+        <span class="gate">GATE — 헤드셋 블라인드 테스트 10명 중 7명이 '사람 같다'고 답할 것 + 지연 P95 ≤ 1.5 s</span>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-meta">
+        <span class="phase-w">P2 · W7–W10</span>
+        <h3 style="margin:0;font-size:16px">실시간 아바타</h3>
+        <span class="weeks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+      </div>
+      <div class="phase-body">
+        <p>목소리에 몸을 붙인다. 60 fps를 놓치지 않는 것이 이 페이즈의 유일한 하드 요건이다.</p>
+        <ul>
+          <li>UE5 프로젝트 셋업, 스타일라이즈드 캐릭터 리그 + ARKit 호환 블렌드셰이프</li>
+          <li>오디오→비지메 립싱크, 동기 오차 ±40 ms 이내 검증</li>
+          <li>감정 태그 → 표정 매핑, 마이크로 표정·눈깜빡임 절차 생성</li>
+          <li>시선 look-at IK, 아이들 행동 트리(대기·주목·반응·작별)</li>
+          <li>바지인: 관람객이 말을 끊으면 발화 중단 후 자연스럽게 회복하는 상태머신</li>
+          <li>beat 오디오 스케줄러 + 뜸 들이는 표정 클립</li>
+        </ul>
+        <span class="gate">GATE — 60 fps 고정 30분 무드랍 + 립싱크 육안 검수 통과 + 바지인 20회 중 실패 0</span>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-meta">
+        <span class="phase-w">P3 · W11–W14</span>
+        <h3 style="margin:0;font-size:16px">인지와 유머</h3>
+        <span class="weeks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i><i></i></span>
+      </div>
+      <div class="phase-body">
+        <p>관람객을 '보기' 시작한다. 프로젝트의 차별점이 여기서 만들어지고, 실패 위험도 여기 몰려 있다.</p>
+        <ul>
+          <li>카메라 파이프라인: 검출·추적·재식별, 깊이 기반 신장 추정</li>
+          <li>화자 지정: 마이크 도래각 + 입 움직임 융합</li>
+          <li>VLM 장면 요약 2 fps, 원본 프레임 미저장 경로 검증</li>
+          <li>유머 엔진 v1 — 관찰·캐논 2소스, 셋업/beat/펀치 출력 계약 강제</li>
+          <li>roast 강도 다이얼과 자동 조절 로직</li>
+          <li>웃음 분류기 + humor_src 태깅 로깅, 첫 튜닝 루프 1회전</li>
+          <li>예외 시나리오 팩 전량 구현</li>
+        </ul>
+        <span class="gate">GATE — 개인화 대사 ≥ 2회/세션 + 웃음 ≥ 3회/세션(30세션 관찰자 채점) + 안전 위반 0</span>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-meta">
+        <span class="phase-w">P4 · W15–W17</span>
+        <h3 style="margin:0;font-size:16px">키오스크 통합과 현장 테스트</h3>
+        <span class="weeks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="f"></i><i class="f"></i><i class="f"></i></span>
+      </div>
+      <div class="phase-body">
+        <p>실험실을 나간다. 실제 소음·조명·사람 흐름에서 무너지는 지점을 찾아 막는다.</p>
+        <ul>
+          <li>키오스크 프레임 조립, 카메라·마이크·조명 위치 실측 튜닝</li>
+          <li>AEC 현장 캘리브레이션 — 스피커 소리가 마이크로 되돌아오는 문제 해결</li>
+          <li>오퍼레이터 콘솔: 실시간 자막, 원터치 뮤트, 수동 대사, 세션 강제 종료</li>
+          <li>큐 관리·세션 타이머·마무리 대사, 처리량 측정</li>
+          <li>사내 관람객 100명 연속 테스트 → 수용 기준 7개 판정</li>
+          <li>장애 폴백 리허설: GPU·네트워크·TTS 각각 강제 차단 후 복구 확인</li>
+        </ul>
+        <span class="gate">GATE — MVP 수용 기준 7개 전부 충족 → 디즈니 제안 빌드 동결</span>
+      </div>
+    </div>
+  </div>
+  <p>P4 이후 2차 로드맵 후보: 우디 퍼소나 팩 추가(팩 교체 구조 검증) → 다인 동시 대화 → 애니매트로닉스 상반신 → 무인 운영. 각각 별도 기획으로 분리한다.</p>
+</section>
+
+<section id="s9">
+  <div class="sec-head"><span class="sec-num">09</span><h2>팀 · 장비 · 예산</h2></div>
+  <p class="sec-sub">아래 금액은 국내 시장 기준 추정치다. 발주 시점에 실제 견적으로 갱신할 것.</p>
+
+  <h3>팀 구성</h3>
+  <div class="tw"><table>
+    <thead><tr><th>역할</th><th class="num">FTE</th><th>책임</th><th>투입</th></tr></thead>
+    <tbody>
+      <tr><td><b>프로덕트 리드 / 쇼 디렉터</b></td><td class="num">1.0</td><td>범위 결정, 게이트 판정, 권리 협상, 연출 방향</td><td>P0–P4</td></tr>
+      <tr><td><b>대화 엔지니어</b></td><td class="num">1.0</td><td>퍼소나 프롬프트, 유머 엔진, 메모리, 가드레일, 평가 하네스</td><td>P1–P4</td></tr>
+      <tr><td><b>실시간 오디오 엔지니어</b></td><td class="num">1.0</td><td>ASR·TTS 스트리밍, AEC·빔포밍, 바지인, beat 스케줄러</td><td>P1–P4</td></tr>
+      <tr><td><b>테크 아티스트 (UE5)</b></td><td class="num">1.0</td><td>리그·블렌드셰이프, 립싱크, 행동 트리, 렌더 성능</td><td>P2–P4</td></tr>
+      <tr><td><b>컴퓨터 비전 엔지니어</b></td><td class="num">1.0</td><td>검출·추적, 화자 지정, VLM 요약, 신장 추정</td><td>P3–P4</td></tr>
+      <tr><td><b>하드웨어 · 설치</b></td><td class="num">0.5</td><td>키오스크 설계, 배선, 현장 튜닝</td><td>P0, P4</td></tr>
+      <tr><td><b>QA · 운영</b></td><td class="num">0.5</td><td>회귀 스위트 실행, 100인 테스트 운영, 로그 검수</td><td>P3–P4</td></tr>
+      <tr><td><b>성우 · 코미디 작가</b></td><td class="num">계약</td><td>보이스 녹음, 대사 팩 집필, 유머 튜닝 루프 검수</td><td>P0–P4 스팟</td></tr>
+    </tbody>
+    <tfoot><tr><td>피크 기준</td><td class="num">5.5</td><td colspan="2">4개월 투입</td></tr></tfoot>
+  </table></div>
+
+  <h3>하드웨어 (키오스크 1대)</h3>
+  <div class="tw"><table>
+    <thead><tr><th>품목</th><th>사양 · 비고</th><th class="num">추정가 (원)</th></tr></thead>
+    <tbody>
+      <tr><td>GPU 워크스테이션</td><td>렌더 + 로컬 추론(ASR·비전) 동시. VRAM 24GB 이상 권장</td><td class="num">7,000,000</td></tr>
+      <tr><td>세로형 디스플레이</td><td>65~75인치 상업용, 등신대 구도. 눈높이 배치가 중요</td><td class="num">2,500,000</td></tr>
+      <tr><td>RGB 카메라</td><td>글로벌 셔터, 광각. 디스플레이 상단 중앙 — 시선 정합의 기준점</td><td class="num">900,000</td></tr>
+      <tr><td>깊이 카메라</td><td>거리·신장 추정용</td><td class="num">500,000</td></tr>
+      <tr><td>마이크 어레이 + 오디오 I/F</td><td>4~6ch 빔포밍. 소음 환경 성패의 80%가 여기서 갈린다</td><td class="num">1,200,000</td></tr>
+      <tr><td>스피커 + 서브우퍼</td><td>지향성 배치로 마이크 회귀음 최소화</td><td class="num">1,500,000</td></tr>
+      <tr><td>조명</td><td>관람객 얼굴 조도 확보(비전 정확도 직결), 눈부심 없는 확산</td><td class="num">600,000</td></tr>
+      <tr><td>키오스크 프레임 · 시공</td><td>구조물, 배선, 방열, 안전 마감</td><td class="num">3,000,000</td></tr>
+      <tr><td>오퍼레이터 태블릿 · 네트워크</td><td>콘솔 단말, 유선 회선 이중화</td><td class="num">800,000</td></tr>
+    </tbody>
+    <tfoot><tr><td colspan="2">소계</td><td class="num">18,000,000</td></tr></tfoot>
+  </table></div>
+
+  <h3>MVP 총예산 (추정)</h3>
+  <div class="tw"><table>
+    <thead><tr><th>항목</th><th>산출 근거</th><th class="num">추정 (원)</th></tr></thead>
+    <tbody>
+      <tr><td>인건비</td><td>5.5 FTE × 4개월 (조직 인건비 기준 적용 필요)</td><td class="num">220,000,000</td></tr>
+      <tr><td>하드웨어</td><td>키오스크 1대 + 개발용 예비 장비</td><td class="num">22,000,000</td></tr>
+      <tr><td>캐릭터 자산 외주</td><td>3D 모델링·리깅·제스처 클립</td><td class="num">25,000,000</td></tr>
+      <tr><td>보이스 제작</td><td>성우 녹음 3~5시간 + 학습·라이선스 계약</td><td class="num">15,000,000</td></tr>
+      <tr><td>대사 집필</td><td>코미디 작가 파트타임 4개월</td><td class="num">8,000,000</td></tr>
+      <tr><td>API · 클라우드</td><td>개발 기간 추론 비용 + 테스트 세션</td><td class="num">6,000,000</td></tr>
+      <tr><td>예비비</td><td>10%</td><td class="num">30,000,000</td></tr>
+    </tbody>
+    <tfoot><tr><td colspan="2">합계</td><td class="num">326,000,000</td></tr></tfoot>
+  </table></div>
+  <p>인건비를 외부 조달이 아닌 내부 인력으로 소화하면 현금 지출은 <strong>약 1억 원</strong> 수준으로 내려간다. 권리 협상 결과에 따라 라이선스 비용이 별도로 발생한다.</p>
+</section>
+
+<section id="s10">
+  <div class="sec-head"><span class="sec-num">10</span><h2>운영 원가</h2></div>
+  <p class="sec-sub">"세션 하나에 얼마인가"는 사업성을 가르는 숫자다. 단가는 벤더·환율에 따라 바뀌므로 <strong>계산식</strong>을 고정하고 단가만 갈아끼운다.</p>
+
+  <p>기준 세션: <strong>90초, 관람객 발화 8턴, 캐릭터 대사 8회(평균 40자)</strong>.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>구간</th><th>세션당 사용량</th><th>계산식</th><th class="num">추정 (USD)</th></tr></thead>
+    <tbody>
+      <tr><td>ASR 스트리밍</td><td>1.5분 오디오</td><td>분당 단가 × 1.5</td><td class="num">0.009</td></tr>
+      <tr><td>VLM 장면 요약</td><td>크롭 4회 × 요약 200토큰</td><td>(이미지 + 출력) × 4</td><td class="num">0.012</td></tr>
+      <tr><td>LLM 대사 생성</td><td>8턴 × (캐시 3k + 신규 0.4k 입력 / 0.09k 출력)</td><td>캐시 읽기 단가 적용이 핵심</td><td class="num">0.030</td></tr>
+      <tr><td>TTS 합성</td><td>8회 × 40자 = 320자</td><td>문자당 단가 × 320</td><td class="num">0.034</td></tr>
+      <tr><td>가드레일 분류</td><td>입력 8 + 출력 8회</td><td>소형 모델 또는 로컬</td><td class="num">0.004</td></tr>
+    </tbody>
+    <tfoot><tr><td colspan="3">세션당 합계</td><td class="num">≈ 0.089</td></tr></tfoot>
+  </table></div>
+
+  <p><strong>환산 약 120원/세션.</strong> 일 10시간 × 시간당 28세션 = 280세션 기준 <strong>일 3.4만 원, 월 약 100만 원</strong>. 키오스크 1대 기준으로 운영비는 사실상 인건비(오퍼레이터)가 지배한다.</p>
+
+  <h3>원가를 줄이는 순서</h3>
+  <ol>
+    <li><strong>프롬프트 캐싱을 먼저 확실히 한다.</strong> 고정 블록 3k 토큰이 매 턴 캐시 미스면 LLM 비용이 3~4배가 된다. 고정 블록의 바이트 불변성을 테스트로 강제한다.</li>
+    <li><strong>캐치프레이즈는 합성하지 않는다.</strong> 반복 대사 상위 30개를 사전 녹음으로 대체하면 TTS 문자 수가 30~40% 줄고 품질과 지연도 같이 좋아진다.</li>
+    <li><strong>ASR·비전을 온프레미스로 내린다.</strong> GPU가 이미 렌더용으로 상주하므로 유휴 자원을 쓰는 셈이다. 지연도 함께 개선된다.</li>
+    <li><strong>VLM 호출을 이벤트 기반으로.</strong> 매 프레임이 아니라 새 인물 진입·복장 변화 시에만 호출한다.</li>
+  </ol>
+
+  <div class="note">
+    <p class="note-t">주의</p>
+    <p>위 단가는 문서 작성 시점의 일반적 수준을 가정한 <strong>추정치</strong>다. 예산 확정 전 각 벤더의 현재 요금표로 이 표를 다시 채워야 한다.</p>
+  </div>
+</section>
+
+<section id="s11">
+  <div class="sec-head"><span class="sec-num">11</span><h2>리스크</h2></div>
+  <p class="sec-sub">확률 × 영향 순으로 정렬. 상위 3개는 P0~P1에서 선제 검증한다.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>리스크</th><th>영향</th><th>확률</th><th>대응 · 검증 시점</th></tr></thead>
+    <tbody>
+      <tr><td><b>소음 환경에서 음성 인식이 무너짐</b><br>파크·전시장은 70~80 dBA가 기본</td><td><span class="chip crit">치명</span></td><td><span class="chip crit">높음</span></td><td>지향성 마이크 + AEC + 현장 녹음 기반 튜닝. <b>P0에 현장 소음 실측</b>, P1에 실측 노이즈를 섞은 데이터로 벤치마크</td></tr>
+      <tr><td><b>권리 미확보로 공개 불가</b></td><td><span class="chip crit">치명</span></td><td><span class="chip warn">중</span></td><td>오리지널 트랙 병행(0장), 퍼소나 팩 격리로 교체 비용 최소화. <b>P0에 결론</b></td></tr>
+      <tr><td><b>웃기지 않음</b><br>동작은 하는데 재미가 없는 상태</td><td><span class="chip crit">치명</span></td><td><span class="chip warn">중</span></td><td>작가·성우를 개발 초기부터 투입, 웃음 로깅 기반 주간 튜닝. <b>P1 게이트에서 아바타 없이 먼저 판정</b></td></tr>
+      <tr><td><b>지연 1.5초 초과</b></td><td><span class="chip crit">높음</span></td><td><span class="chip warn">중</span></td><td>백채널·문장 파이프라이닝·프롬프트 캐싱, 구간별 온프레미스 폴백. P1부터 상시 계측</td></tr>
+      <tr><td><b>스피커 소리를 마이크가 되받음</b><br>캐릭터가 자기 말에 반응</td><td><span class="chip crit">높음</span></td><td><span class="chip crit">높음</span></td><td>AEC 필수 + 스피커·마이크 물리 배치 분리. P1에 소프트웨어, P4에 현장 캘리브레이션</td></tr>
+      <tr><td><b>프롬프트 인젝션 · 캐릭터 붕괴</b></td><td><span class="chip warn">중</span></td><td><span class="chip crit">높음</span></td><td>출력 검사기 + 인 캐릭터 회피 대사 30종. 레드팀 세션을 P3 게이트 조건에 포함</td></tr>
+      <tr><td><b>아동 부적절 발화</b></td><td><span class="chip crit">치명</span></td><td><span class="chip ok">낮음</span></td><td>4중 방어 + 오퍼레이터 원터치 정지 + 전량 로깅. 0건이 아니면 배포 중단</td></tr>
+      <tr><td><b>처리량 부족 · 대기줄 정체</b></td><td><span class="chip warn">중</span></td><td><span class="chip warn">중</span></td><td>세션 타이머 + 자연스러운 마무리 대사, 필요 시 2대 병렬 운영</td></tr>
+      <tr><td><b>GPU · 네트워크 · 벤더 장애</b></td><td><span class="chip warn">중</span></td><td><span class="chip warn">중</span></td><td>사전 녹음 폴백 루프, 회선 이중화, P4에 강제 차단 리허설</td></tr>
+      <tr><td><b>불쾌한 골짜기</b><br>사실적일수록 어색함이 커짐</td><td><span class="chip warn">중</span></td><td><span class="chip warn">중</span></td><td>사실적 인간형이 아닌 <b>스타일라이즈드 캐릭터</b>를 택한 이유. 원작 톤 유지</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="s12">
+  <div class="sec-head"><span class="sec-num">12</span><h2>착수: 저장소 구조와 첫 2주</h2></div>
+  <p class="sec-sub">문서를 승인한 다음 날 아침에 시작할 수 있는 형태로 정리한다.</p>
+
+  <h3>저장소 구조</h3>
+  <p>스테이지 = 프로세스 = 디렉터리로 1:1 대응시킨다. 어떤 스테이지든 혼자 죽고 혼자 재시작할 수 있어야 한다.</p>
+<pre><code>toybox-live/
+├─ apps/
+│  ├─ <b>orchestrator</b>/   세션 상태머신, 이벤트 버스, 지연 계측
+│  ├─ <b>perception</b>/     카메라·추적·신장 추정·VLM 요약        <i>(Stage 1,3)</i>
+│  ├─ <b>voice</b>/          AEC·빔포밍·VAD·ASR·TTS·beat 스케줄러  <i>(Stage 2,5)</i>
+│  ├─ <b>brain</b>/          퍼소나 LLM·유머 엔진·메모리·가드레일   <i>(Stage 4)</i>
+│  ├─ <b>stage</b>/          UE5 프로젝트: 리그·립싱크·행동 트리    <i>(Stage 6,7)</i>
+│  └─ <b>console</b>/        오퍼레이터 웹 콘솔(자막·뮤트·수동 대사)
+├─ packages/
+│  ├─ <b>protocol</b>/       이벤트 스키마 — 모든 스테이지의 유일한 계약
+│  ├─ <b>persona</b>/        캐릭터 팩 <i>(← IP가 바뀌면 여기만 교체)</i>
+│  │   └─ buzz/  prompt/  voice/  lines/  clips/  rules/
+│  └─ <b>eval</b>/           회귀 스위트 — 2장 KPI 10개의 실행 코드
+├─ ops/                 배포·모니터링·현장 설치 체크리스트
+└─ docs/                본 기획서, 결정 기록(ADR), 실측 데이터</code></pre>
+
+  <div class="note vio">
+    <p class="note-t">설계 원칙 세 줄</p>
+    <p><b>1.</b> 스테이지는 <code>protocol</code> 이벤트로만 대화한다 — 직접 함수 호출 금지.<br>
+    <b>2.</b> 캐릭터에 종속된 모든 것은 <code>persona/</code> 안에 있다 — 코드에 캐릭터 이름이 등장하면 설계 위반.<br>
+    <b>3.</b> 측정할 수 없는 기능은 만들지 않는다 — <code>eval/</code>에 판정 코드가 없으면 완료가 아니다.</p>
+  </div>
+
+  <h3>첫 2주 체크리스트 (P0)</h3>
+  <ul class="check">
+    <li><span>권리 트랙 A/B 결정 회의 — 법무 검토 의견 첨부</span><span class="who">리드 · 법무</span></li>
+    <li><span>사운드얼라이크 성우 오디션 공고 (학습·상업 이용 조건 명시)</span><span class="who">리드</span></li>
+    <li><span>배치 예정 공간 소음 실측 — dBA 프로파일 + 잔향 녹음 30분</span><span class="who">오디오</span></li>
+    <li><span>KPI 10개 측정 정의 문서화 + <code>eval</code> 스켈레톤 커밋</span><span class="who">대화</span></li>
+    <li><span><code>protocol</code> 이벤트 스키마 v0 확정 (utterance / scene / perform)</span><span class="who">대화 · 비전</span></li>
+    <li><span>퍼소나 팩 디렉터리 스키마 확정 + 빈 buzz 팩 생성</span><span class="who">대화</span></li>
+    <li><span>GPU 워크스테이션 · 마이크 어레이 · 카메라 발주</span><span class="who">하드웨어</span></li>
+    <li><span>ASR·TTS 벤더 3곳 평가 계정 개설 및 단가표 확보</span><span class="who">오디오</span></li>
+    <li><span>버즈 톤 레퍼런스 수집 — 원작 대사 100개 분해, 말투 규칙 초안</span><span class="who">작가</span></li>
+    <li><span>지연 계측 하네스 설계 (ts_in/ts_out 규약)</span><span class="who">오케스트레이션</span></li>
+    <li><span>P1 게이트 판정 방법 합의 — 블라인드 테스트 프로토콜 문서화</span><span class="who">리드 · QA</span></li>
+    <li><span>주간 리듬 확정: 월 스탠드업 / 금 회귀 측정 + 로그 검수 30세션</span><span class="who">전원</span></li>
+  </ul>
+
+  <h3>결정이 필요한 사항</h3>
+  <p>진행 전 확답이 필요한 세 가지다. 나머지는 기본값으로 진행 가능하다.</p>
+  <ol>
+    <li><strong>권리 트랙.</strong> 토이스토리를 내부 데모로만 쓰고 오리지널 캐릭터를 병행할 것인가, 아니면 처음부터 디즈니 라이선스 협상을 전제로 갈 것인가.</li>
+    <li><strong>배치 목표.</strong> 최종 설치처가 테마파크인가, 전시·팝업인가, 리테일 매장인가. 소음·조도·체류시간이 달라 하드웨어 사양이 바뀐다.</li>
+    <li><strong>인력 조달.</strong> 5.5 FTE를 내부에서 채울지 외부 조달할지에 따라 예산이 1억과 3.3억으로 갈린다.</li>
+  </ol>
+</section>
+
+<footer>
+  <p><strong>Project TOYBOX</strong> · 기술 기획서 v0.1 · 2026-08-31 · Yissue Inc. 내부 검토용</p>
+  <p>금액·성능 수치는 문서 작성 시점의 추정치이며, 발주 및 예산 확정 전 실제 견적과 벤더 요금표로 갱신해야 합니다. 캐릭터 IP·음성권 관련 사항은 법무 검토를 거쳐야 합니다.</p>
+</footer>
+
+</main>
+</div>
+</div>
+
+<script>
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.rail a'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  var secs = Array.prototype.slice.call(document.querySelectorAll('section[id]'));
+  if(!('IntersectionObserver' in window) || !secs.length) return;
+  var visible = {};
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ visible[e.target.id] = e.isIntersecting ? e.intersectionRatio : 0; });
+    var best = null, bestV = 0;
+    secs.forEach(function(s){ var v = visible[s.id] || 0; if(v > bestV){ bestV = v; best = s.id; } });
+    links.forEach(function(a){ a.classList.remove('on'); });
+    if(best && map[best]) map[best].classList.add('on');
+  }, { rootMargin: '-10% 0px -70% 0px', threshold: [0, 0.25, 0.6, 1] });
+  secs.forEach(function(s){ io.observe(s); });
+})();
+</script>
+
+</body>
+</html>
