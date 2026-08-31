@@ -1,0 +1,28 @@
+# 스캐폴드(mvp/) 자체는 표준 라이브러리만 사용합니다. 설치 없이 바로 실행되세요.
+#     python -m mvp.demo
+#     python -m mvp.simulate
+#
+# 아래는 실제 하드웨어/서비스를 붙이는 단계에서 필요한 패키지입니다.
+# 필요한 줄만 주석 해제하세요.
+
+# --- 비전 (Week 7~8: 촬영 부스, 캘리브레이션) ---
+# opencv-contrib-python>=4.9      # cv2.aruco, calibrateHandEye 포함 (contrib 필요)
+# mediapipe>=0.10                 # Face Mesh ROI 분할
+# pyrealsense2>=2.55              # Intel RealSense D405/D435i
+
+# --- 로봇 SDK (보유 장비에 맞는 것 하나만) ---
+# pymycobot>=3.6                  # Elephant Robotics myCobot 280/320
+# xarm-python-sdk>=1.13           # UFACTORY Lite 6 / xArm 6
+
+# --- 서비스 연동 (Week 9) ---
+# anthropic>=0.40                 # Claude API 상담 멘트
+# httpx>=0.27                     # 피부 분석 벤더 API 호출
+
+# --- 서버/운영 (Week 11~12) ---
+# fastapi>=0.115
+# uvicorn[standard]>=0.32
+# psycopg[binary]>=3.2            # 야간 배치로 중앙 Postgres 동기화
+
+# --- 분석 (S2 단계, 세션 2,000건 이후) ---
+# numpy>=1.26                     # linalg.py 를 numpy 로 교체할 때
+# lightgbm>=4.5

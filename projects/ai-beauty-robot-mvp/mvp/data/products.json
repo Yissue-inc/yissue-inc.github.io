@@ -1,0 +1,44 @@
+{
+  "_comment": "실제 취급 제품 20종으로 교체하세요. 브랜드명은 자리표시자입니다.",
+  "_schema": {
+    "cluster": "밴딧의 arm 단위. SKU 가 아니라 클러스터로 묶어야 200세션에도 학습이 됩니다.",
+    "concerns": "이 제품이 겨냥하는 피부 고민 (measurement metrics 의 키와 동일해야 함)",
+    "skin_types": "dry | oily | combination | sensitive | normal",
+    "price_band": "low(2만 미만) | mid(2~5만) | high(5만 이상)",
+    "slot_id": "슬롯 지그의 물리 번호. 로봇은 이 번호만 알면 됩니다.",
+    "grip_force": "0~100. 튜브는 낮게, 유리병은 높게.",
+    "form": "tube | pump | jar | bottle | sachet — 그리퍼 핑거 형상 선택에 사용"
+  },
+  "clusters": {
+    "C1": "진정/수분",
+    "C2": "피지/모공",
+    "C3": "미백/색소",
+    "C4": "주름/탄력",
+    "C5": "각질/결",
+    "C6": "자외선차단",
+    "C7": "트러블",
+    "C8": "아이케어"
+  },
+  "products": [
+    {"id": "P01", "brand": "브랜드A", "name": "시카 수분 토너",       "category": "toner",     "cluster": "C1", "concerns": ["redness", "dryness"],           "skin_types": ["sensitive", "dry"],        "price": 18000, "price_band": "low",  "slot_id": 1,  "grip_force": 45, "form": "bottle", "stock": 6},
+    {"id": "P02", "brand": "브랜드A", "name": "판테놀 진정 앰플",     "category": "ampoule",   "cluster": "C1", "concerns": ["redness", "dryness"],           "skin_types": ["sensitive", "normal"],     "price": 32000, "price_band": "mid",  "slot_id": 2,  "grip_force": 55, "form": "pump",   "stock": 6},
+    {"id": "P03", "brand": "브랜드B", "name": "히알루론 수분 크림",   "category": "cream",     "cluster": "C1", "concerns": ["dryness"],                      "skin_types": ["dry", "normal"],           "price": 26000, "price_band": "mid",  "slot_id": 3,  "grip_force": 60, "form": "jar",    "stock": 6},
+    {"id": "P04", "brand": "브랜드B", "name": "포어 클렌징 폼",       "category": "cleanser",  "cluster": "C2", "concerns": ["oiliness", "pore"],             "skin_types": ["oily", "combination"],     "price": 14000, "price_band": "low",  "slot_id": 4,  "grip_force": 35, "form": "tube",   "stock": 6},
+    {"id": "P05", "brand": "브랜드C", "name": "나이아신아마이드 세럼","category": "serum",     "cluster": "C2", "concerns": ["oiliness", "pore", "pigmentation"], "skin_types": ["oily", "combination"], "price": 29000, "price_band": "mid",  "slot_id": 5,  "grip_force": 55, "form": "pump",   "stock": 6},
+    {"id": "P06", "brand": "브랜드C", "name": "모공 타이트닝 에센스", "category": "essence",   "cluster": "C2", "concerns": ["pore", "texture"],              "skin_types": ["oily", "combination"],     "price": 38000, "price_band": "mid",  "slot_id": 6,  "grip_force": 55, "form": "pump",   "stock": 6},
+    {"id": "P07", "brand": "브랜드D", "name": "비타민C 브라이트 세럼","category": "serum",     "cluster": "C3", "concerns": ["pigmentation", "tone"],         "skin_types": ["normal", "combination"],   "price": 45000, "price_band": "mid",  "slot_id": 7,  "grip_force": 55, "form": "pump",   "stock": 6},
+    {"id": "P08", "brand": "브랜드D", "name": "톤업 데일리 로션",     "category": "lotion",    "cluster": "C3", "concerns": ["tone"],                         "skin_types": ["normal", "dry"],           "price": 22000, "price_band": "mid",  "slot_id": 8,  "grip_force": 45, "form": "tube",   "stock": 6},
+    {"id": "P09", "brand": "브랜드E", "name": "트라넥삼 스팟 케어",   "category": "spot",      "cluster": "C3", "concerns": ["pigmentation"],                 "skin_types": ["normal", "sensitive"],     "price": 52000, "price_band": "high", "slot_id": 9,  "grip_force": 40, "form": "tube",   "stock": 6},
+    {"id": "P10", "brand": "브랜드E", "name": "레티놀 0.1 나이트 크림","category": "cream",    "cluster": "C4", "concerns": ["wrinkle"],                      "skin_types": ["normal", "dry"],           "price": 58000, "price_band": "high", "slot_id": 10, "grip_force": 60, "form": "jar",    "stock": 6},
+    {"id": "P11", "brand": "브랜드F", "name": "펩타이드 리프팅 앰플", "category": "ampoule",   "cluster": "C4", "concerns": ["wrinkle", "firmness"],          "skin_types": ["normal", "dry"],           "price": 67000, "price_band": "high", "slot_id": 11, "grip_force": 55, "form": "pump",   "stock": 6},
+    {"id": "P12", "brand": "브랜드F", "name": "콜라겐 탄력 크림",     "category": "cream",     "cluster": "C4", "concerns": ["wrinkle", "firmness", "dryness"],"skin_types": ["dry", "normal"],          "price": 41000, "price_band": "mid",  "slot_id": 12, "grip_force": 60, "form": "jar",    "stock": 6},
+    {"id": "P13", "brand": "브랜드G", "name": "PHA 마일드 필링젤",    "category": "exfoliant", "cluster": "C5", "concerns": ["texture", "pore"],              "skin_types": ["sensitive", "combination"],"price": 24000, "price_band": "mid",  "slot_id": 13, "grip_force": 45, "form": "tube",   "stock": 6},
+    {"id": "P14", "brand": "브랜드G", "name": "AHA 각질 토너",        "category": "toner",     "cluster": "C5", "concerns": ["texture"],                      "skin_types": ["oily", "normal"],          "price": 19000, "price_band": "low",  "slot_id": 14, "grip_force": 45, "form": "bottle", "stock": 6},
+    {"id": "P15", "brand": "브랜드H", "name": "무기자차 선크림 SPF50","category": "suncare",   "cluster": "C6", "concerns": ["protection", "redness"],        "skin_types": ["sensitive", "dry"],        "price": 21000, "price_band": "mid",  "slot_id": 15, "grip_force": 40, "form": "tube",   "stock": 6},
+    {"id": "P16", "brand": "브랜드H", "name": "산뜻 선세럼 SPF50",    "category": "suncare",   "cluster": "C6", "concerns": ["protection", "oiliness"],       "skin_types": ["oily", "combination"],     "price": 25000, "price_band": "mid",  "slot_id": 16, "grip_force": 40, "form": "tube",   "stock": 6},
+    {"id": "P17", "brand": "브랜드I", "name": "티트리 스팟 젤",       "category": "spot",      "cluster": "C7", "concerns": ["acne", "oiliness"],             "skin_types": ["oily", "combination"],     "price": 16000, "price_band": "low",  "slot_id": 17, "grip_force": 35, "form": "tube",   "stock": 6},
+    {"id": "P18", "brand": "브랜드I", "name": "BHA 트러블 세럼",      "category": "serum",     "cluster": "C7", "concerns": ["acne", "pore"],                 "skin_types": ["oily"],                    "price": 31000, "price_band": "mid",  "slot_id": 18, "grip_force": 55, "form": "pump",   "stock": 6},
+    {"id": "P19", "brand": "브랜드J", "name": "카페인 아이롤온",      "category": "eye",       "cluster": "C8", "concerns": ["dark_circle"],                  "skin_types": ["normal", "combination"],   "price": 27000, "price_band": "mid",  "slot_id": 19, "grip_force": 50, "form": "bottle", "stock": 6},
+    {"id": "P20", "brand": "브랜드J", "name": "펩타이드 아이크림",    "category": "eye",       "cluster": "C8", "concerns": ["dark_circle", "wrinkle"],       "skin_types": ["dry", "normal"],           "price": 39000, "price_band": "mid",  "slot_id": 20, "grip_force": 55, "form": "jar",    "stock": 6}
+  ]
+}
