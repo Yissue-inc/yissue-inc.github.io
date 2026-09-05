@@ -1,0 +1,17 @@
+{
+  "name": "coupang-scraper",
+  "version": "1.0.0",
+  "private": true,
+  "description": "쿠팡 상품 페이지의 메타데이터와 이미지 에셋을 로컬로 내려받는 Playwright 스크래퍼",
+  "main": "scrape.js",
+  "scripts": {
+    "scrape": "node scrape.js",
+    "test": "node test-units.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "playwright": "^1.47.0"
+  }
+}
