@@ -1,0 +1,13 @@
+{
+  "name": "sbs-teum-clips",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SBS '틈만나면,' 클립 목록을 수집해 게임 이름을 정리하는 스크래퍼",
+  "main": "scrape-clips.js",
+  "scripts": {
+    "scrape": "node scrape-clips.js",
+    "test": "node test-extract.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": { "playwright": "^1.47.0" }
+}
