@@ -22,8 +22,10 @@ class FaceGeometry:
     raw: object = None                          # 검출기 원시 행 (SFace alignCrop용)
 
     chin: Point | None = None                   # 턱끝
-    crown: Point | None = None                  # 정수리 (머리카락 포함)
+    crown: Point | None = None                  # 머리카락 최상부 — 프레임에 들어가야 할 지점
     crown_source: str = "none"                  # matte | landmark | none
+    skull_top: Point | None = None              # 머리카락을 제외한 머리 최상부
+    skull_top_source: str = "none"
     landmarks: list[Point] = field(default_factory=list)
 
     # --- 파생값 ---
@@ -67,10 +69,23 @@ class FaceGeometry:
 
     @property
     def head_height(self) -> float | None:
-        """정수리~턱끝 픽셀 거리. crown/chin이 모두 있을 때만."""
+        """머리카락 최상부~턱끝 픽셀 거리. 시각적 머리 크기."""
         if self.chin is None or self.crown is None:
             return None
         return abs(self.chin[1] - self.crown[1])
+
+    @property
+    def head_height_skull(self) -> float | None:
+        """머리카락을 제외한 머리 최상부~턱끝 픽셀 거리.
+
+        외교부 여권 사진 규정이 요구하는 '머리 길이'가 이 값이다 —
+        "정수리(머리카락을 제외한 머리 최상부)부터 턱까지 3.2~3.6cm".
+        머리숱이 많은 사람에게 hair-top 기준으로 재면 머리가 규정보다
+        작게 잡혀 반려된다.
+        """
+        if self.chin is None or self.skull_top is None:
+            return None
+        return abs(self.chin[1] - self.skull_top[1])
 
     @property
     def face_axis_x(self) -> float:

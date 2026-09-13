@@ -53,14 +53,28 @@ def _skin_L(bgr: np.ndarray, geo: FaceGeometry) -> float:
     return float(np.median(lab[:, :, 0])) * 100.0 / 255.0
 
 
+# 규격 크롭(413x531)을 256px로 맞춰 잰 라플라시안 분산의 실측 범위
+# (2026-09-13, out/lena_id_kr.png 기준):
+#   정상 459 / 블러 k=3 294, k=5 208, k=9 91 / 30% 축소후 확대 159 / 과샤프닝 1139
+# 뭉개짐과 과도한 샤프닝(헤일로)은 둘 다 생성물의 실제 아티팩트이므로 양쪽을 벌점한다.
+_SHARP_GOOD = (250.0, 800.0)
+_SHARP_FLOOR, _SHARP_CEIL = 60.0, 1600.0
+
+
 def _sharpness_score(bgr: np.ndarray) -> float:
-    """0..1. 생성물이 뭉개졌거나 과도하게 샤프닝됐는지."""
+    """0..1 밴드 스코어. 너무 흐려도, 너무 날카로워도 떨어진다."""
     gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
     if max(gray.shape) != 256:
         s = 256 / max(gray.shape)
-        gray = cv2.resize(gray, None, fx=s, fy=s, interpolation=cv2.INTER_AREA)
+        gray = cv2.resize(gray, None, fx=s, fy=s,
+                         interpolation=cv2.INTER_AREA if s < 1 else cv2.INTER_CUBIC)
     v = float(cv2.Laplacian(gray, cv2.CV_64F).var())
-    return float(np.clip(v / 400.0, 0.0, 1.0))
+    lo, hi = _SHARP_GOOD
+    if lo <= v <= hi:
+        return 1.0
+    if v < lo:
+        return float(np.clip((v - _SHARP_FLOOR) / (lo - _SHARP_FLOOR), 0.0, 1.0))
+    return float(np.clip((_SHARP_CEIL - v) / (_SHARP_CEIL - hi), 0.0, 1.0))
 
 
 def _eye_symmetry(geo: FaceGeometry) -> float:

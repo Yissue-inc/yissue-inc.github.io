@@ -22,9 +22,10 @@ from .geometry import FaceGeometry, Point
 MODELS_DIR = Path(os.environ.get(
     "IDPHOTO_MODELS", Path(__file__).resolve().parents[2] / "models"))
 
-# 성인 두상 인체계측 근사: (정수리~턱) / (이마 상단 랜드마크~턱) ≈ 1.25
-# 머리숱·헤어스타일에 따라 실제로는 1.15~1.45로 흔들린다. matte 전략을 항상 우선할 것.
-_CROWN_RATIO = 1.25
+# 성인 두상 인체계측 근사: (머리카락 제외 머리 최상부~턱) / (이마 상단 랜드마크~턱) ≈ 1.25
+# 이 비율은 두개골 기준이므로 머리카락 부피에 영향받지 않는다 — 외교부 여권
+# 규정이 요구하는 '머리 길이'를 재는 데 쓴다.
+_SKULL_RATIO = 1.25
 
 # MediaPipe FaceMesh 인덱스
 _MP_CHIN = 152
@@ -117,8 +118,13 @@ def estimate_chin_from_box(geo: FaceGeometry) -> Point:
     return (geo.face_axis_x, mouth_mid_y + eye_to_mouth * 0.72)
 
 
-def crown_from_landmarks(geo: FaceGeometry) -> Point | None:
-    """이마 상단 랜드마크에서 인체계측 비율로 정수리를 외삽."""
+def skull_top_from_landmarks(geo: FaceGeometry) -> Point | None:
+    """이마 상단 랜드마크에서 인체계측 비율로 머리 최상부(머리카락 제외)를 외삽.
+
+    랜드마크는 머리카락을 보지 않으므로, 이 외삽값은 원리적으로 두개골
+    기준이다. 규정상 머리 길이 측정에는 이것이 맞고, 프레임에 머리카락이
+    들어가는지 확인할 때는 crown_from_matte 쪽을 써야 한다.
+    """
     if geo.chin is None:
         return None
     if geo.landmarks and len(geo.landmarks) > _MP_BROW_TOP:
@@ -127,12 +133,12 @@ def crown_from_landmarks(geo: FaceGeometry) -> Point | None:
         # 랜드마크가 없으면 박스 상단을 이마 상단 대용으로 쓴다
         brow = (geo.face_axis_x, geo.box[1])
     chin_y = geo.chin[1]
-    return (geo.face_axis_x, chin_y - (chin_y - brow[1]) * _CROWN_RATIO)
+    return (geo.face_axis_x, chin_y - (chin_y - brow[1]) * _SKULL_RATIO)
 
 
 def crown_from_matte(bgr: np.ndarray, geo: FaceGeometry,
                      tol: int = 26) -> Point | None:
-    """배경이 균일한 이미지에서 전경 최상단(=머리카락 끝)을 찾는다.
+    """배경이 균일한 이미지에서 전경 최상단(=머리카락 최상부)을 찾는다.
 
     이미지 네 모서리에서 배경색을 추정하고, 얼굴 중심 열 밴드에서 배경과
     충분히 다른 첫 행을 정수리로 본다. 생성된 스튜디오 사진에 잘 맞는다.
@@ -185,11 +191,17 @@ class FaceAnalyzer:
             if not self.landmarker.annotate(bgr, geo):
                 geo.chin = estimate_chin_from_box(geo)
 
-            crown = crown_from_matte(bgr, geo) if self.prefer_matte else None
-            if crown is not None:
-                geo.crown, geo.crown_source = crown, "matte"
-            else:
-                lm_crown = crown_from_landmarks(geo)
-                if lm_crown is not None:
-                    geo.crown, geo.crown_source = lm_crown, "landmark"
+            # 두 지점을 따로 구한다. 머리카락 최상부는 프레임 적합성에,
+            # 두개골 최상부는 규정상 머리 길이 측정에 쓴다.
+            skull = skull_top_from_landmarks(geo)
+            if skull is not None:
+                geo.skull_top, geo.skull_top_source = skull, "landmark"
+
+            hair = crown_from_matte(bgr, geo) if self.prefer_matte else None
+            if hair is not None:
+                geo.crown, geo.crown_source = hair, "matte"
+            elif skull is not None:
+                # 매트를 못 뽑으면 머리카락 최상부를 알 수 없다. 두개골 기준값을
+                # 대신 쓰되 출처를 남겨, 규격 리포트에서 신뢰도를 낮게 표시한다.
+                geo.crown, geo.crown_source = skull, "landmark"
         return faces
