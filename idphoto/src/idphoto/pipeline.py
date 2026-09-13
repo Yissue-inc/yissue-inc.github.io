@@ -111,7 +111,8 @@ class Pipeline:
     def run(self, images: list[np.ndarray], spec_key: str = "id_kr",
             n_generate: int | None = None, n_present: int | None = None,
             retouch: float = 0.5, seed: int = 0,
-            presets: list[prompts.Preset] | None = None) -> OrderResult:
+            presets: list[prompts.Preset] | None = None,
+            variants: list[str] | None = None) -> OrderResult:
         t0 = time.perf_counter()
         spec = get_spec(spec_key)
         n_gen = n_generate or self.cfg.qa.n_generate
@@ -128,15 +129,23 @@ class Pipeline:
                 "서로 다른 사람의 사진이 섞였을 수 있습니다")
 
         grid = presets or prompts.grid()
+        # 모델과 프롬프트 변형을 서로 다른 주기로 돌려, 적은 장수로도 두 축이
+        # 고르게 섞이게 한다(같은 주기면 항상 같은 조합만 나온다).
+        vlist = variants or [prompts.DEFAULT_VARIANT]
+        for v in vlist:
+            if v not in prompts.VARIANTS:
+                raise KeyError(f"모르는 프롬프트 변형 {v!r}; "
+                               f"가능: {', '.join(prompts.VARIANTS)}")
         usable = [g.face for g in res.gates if g.usable and g.face]
         refs = [img for img, g in zip(images, res.gates) if g.usable]
 
         for i in range(n_gen):
             preset = grid[i % len(grid)]
             provider = self._provider_for(i)
+            variant = vlist[(i // max(1, len(self.specs) or 1)) % len(vlist)]
             gen = provider.generate(GenerationRequest(
-                references=refs, preset=preset, prompt=prompts.build(preset),
-                seed=seed + i))
+                references=refs, preset=preset,
+                prompt=prompts.build(preset, variant), seed=seed + i))
             res.cost_usd += gen.cost_usd
             for k, v in (gen.meta.get("usage") or {}).items():
                 if isinstance(v, (int, float)):
@@ -149,6 +158,7 @@ class Pipeline:
                                      f"{res.order_id}-{i:03d}")
             if cand is not None:
                 cand.model = gen.model
+                cand.variant = variant
                 res.candidates.append(
                     qa.evaluate(cand, reference, ref_skin, self.cfg.qa))
 

@@ -80,7 +80,9 @@ def cmd_run(args) -> int:
     try:
         res = pipe.run([img for _, img in loaded], spec_key=args.spec,
                        n_generate=args.n, n_present=args.present,
-                       retouch=args.retouch, seed=args.seed, presets=presets)
+                       retouch=args.retouch, seed=args.seed, presets=presets,
+                       variants=[x.strip() for x in args.variants.split(",")]
+                       if args.variants else None)
     except ValueError as exc:
         print(f"중단: {exc}", file=sys.stderr)
         return 1
@@ -91,12 +93,13 @@ def cmd_run(args) -> int:
         summary["est_usd_next_run"] = round(
             res.cost_usd / max(1, summary["generated"]) * args.n, 4)
     print(json.dumps(summary, ensure_ascii=False, indent=2))
-    by_model = summary.get("by_model", {})
-    if len(by_model) > 1:
-        print("\n모델별 비교")
-        print(f"  {'모델':30s} {'생성':>4s} {'통과':>4s} {'통과율':>7s} {'유사도평균':>10s} {'최고':>7s}")
-        for name, m in sorted(by_model.items(),
-                              key=lambda kv: -kv[1]["id_cos_mean"]):
+    for label, key in (("모델별", "by_model"), ("프롬프트 변형별", "by_variant")):
+        groups = summary.get(key, {})
+        if len(groups) <= 1:
+            continue
+        print(f"\n{label} 비교")
+        print(f"  {'':30s} {'생성':>4s} {'통과':>4s} {'통과율':>7s} {'유사도평균':>10s} {'최고':>7s}")
+        for name, m in sorted(groups.items(), key=lambda kv: -kv[1]["id_cos_mean"]):
             print(f"  {name:30s} {m['n']:>4d} {m['passed']:>4d} "
                   f"{m['pass_rate']:>7.2f} {m['id_cos_mean']:>10.3f} {m['id_cos_max']:>7.3f}")
 
@@ -105,7 +108,7 @@ def cmd_run(args) -> int:
         fr = c.framing
         print(f"  {rank}. {c.variant_id}  점수 {c.score:.3f}  유사도 {c.id_cos:.3f}  "
               f"머리 {fr.head_mm:.1f}mm  {c.preset['wardrobe']}/{c.preset['backdrop']}"
-              + (f"  [{c.model}]" if c.model else ""))
+              + (f"  [{c.model}/{c.variant}]" if c.model else ""))
 
     if res.candidates and not res.selected:
         print("\n통과한 후보가 없습니다. 탈락 사유:")
@@ -237,6 +240,8 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--model", default=None, help="프로바이더 모델 ID (단일)")
     r.add_argument("--models", default=None,
                    help="쉼표 구분 모델 목록 — 생성을 라운드로빈으로 나눠 비교한다")
+    r.add_argument("--variants", default=None,
+                   help="쉼표 구분 프롬프트 변형 (baseline·lock·measured)")
     r.add_argument("--n", type=int, default=12, help="생성 장수")
     r.add_argument("--present", type=int, default=5, help="노출 장수")
     r.add_argument("--retouch", type=float, default=0.5, help="보정 강도 0..1")
