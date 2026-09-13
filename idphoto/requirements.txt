@@ -1,0 +1,6 @@
+# CPU-only. All runtime components are Apache-2.0 / MIT — commercially usable.
+numpy>=2.0
+pillow>=11.0
+opencv-python-headless>=4.10    # Apache-2.0 (bundles YuNet/SFace inference)
+piexif>=1.1.3                   # MIT — EXIF write for AI-disclosure metadata
+mediapipe>=0.10                 # Apache-2.0 — optional, needs libEGL at runtime

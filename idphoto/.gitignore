@@ -1,0 +1,8 @@
+models/*.onnx
+models/*.task
+out/
+samples/private/
+.env
+__pycache__/
+*.pyc
+.venv/
