@@ -64,8 +64,8 @@ class Pipeline:
         self.provider = get_provider(provider, **kw)
 
     # ---- S0~S2 -------------------------------------------------------
-    def prepare(self, images: list[np.ndarray]) -> tuple[np.ndarray, float, list, float]:
-        """게이팅 → 참조 임베딩. (reference, ref_skin_L, gates, spread) 반환."""
+    def prepare(self, images: list[np.ndarray]) -> tuple[np.ndarray, tuple, list, float]:
+        """게이팅 → 참조 임베딩. (reference, ref_skin_lab, gates, spread) 반환."""
         gates, embeddings, skin = [], [], []
         for img in images:
             faces = self.analyzer.analyze(img)
@@ -73,7 +73,7 @@ class Pipeline:
             gates.append(g)
             if g.usable and g.face is not None:
                 embeddings.append(self.encoder.embed(img, g.face))
-                skin.append(qa._skin_L(img, g.face))
+                skin.append(qa._skin_lab(img, g.face))
 
         if len(embeddings) < self.cfg.gate.min_usable_photos:
             raise ValueError(
@@ -81,8 +81,8 @@ class Pipeline:
                 + " / ".join(m for g in gates for m in g.coaching()))
 
         spread = self.encoder.spread(embeddings)
-        return (self.encoder.reference(embeddings), float(np.mean(skin)),
-                gates, spread)
+        ref_skin = tuple(float(np.median([s[i] for s in skin])) for i in range(3))
+        return self.encoder.reference(embeddings), ref_skin, gates, spread
 
     # ---- S3~S9 -------------------------------------------------------
     def run(self, images: list[np.ndarray], spec_key: str = "id_kr",
@@ -97,7 +97,7 @@ class Pipeline:
         res = OrderResult(order_id=uuid.uuid4().hex[:12], spec=spec,
                           provider=self.provider.name, model=self.provider.model)
 
-        reference, ref_L, res.gates, res.reference_spread = self.prepare(images)
+        reference, ref_skin, res.gates, res.reference_spread = self.prepare(images)
         if res.reference_spread < self.cfg.gate.reference_spread_min:
             res.errors.append(
                 f"참조 사진들의 유사도가 낮습니다 ({res.reference_spread:.3f}) — "
@@ -121,7 +121,7 @@ class Pipeline:
                                      f"{res.order_id}-{i:03d}")
             if cand is not None:
                 res.candidates.append(
-                    qa.evaluate(cand, reference, ref_L, self.cfg.qa))
+                    qa.evaluate(cand, reference, ref_skin, self.cfg.qa))
 
         res.selected = qa.select(res.candidates, n_out, self.cfg.qa)
         res.elapsed_s = time.perf_counter() - t0

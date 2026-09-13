@@ -34,32 +34,65 @@ _MP_IRIS_R = 468
 _MP_IRIS_L = 473
 
 
-class FaceDetector:
-    """YuNet 검출기 래퍼."""
+#: 검출을 수행할 최대 이미지 긴 변(px).
+#:
+#: YuNet 은 큰 이미지에서 정확도가 급격히 떨어진다. 실측(2026-09-13, 사용자
+#: 실사진 1932x2576):
+#:
+#:   원본 2576px → 검출 점수 0.63, 같은 사람 두 장의 SFace 유사도 0.012
+#:   축소 1600px → 검출 점수 0.92, 같은 사람 두 장의 SFace 유사도 0.830
+#:
+#: 랜드마크가 부정확해지면 SFace 의 alignCrop 이 얼굴을 잘못 정렬하고,
+#: 임베딩이 통째로 망가진다. 요즘 휴대폰 사진은 3000~4000px 이므로 실사용
+#: 업로드는 거의 전부 이 구간에 들어간다.
+#:
+#: 그래서 검출은 축소본에서 하고 좌표만 원본 스케일로 되돌린다. 이후 정렬·
+#: 크롭·리터칭은 원본 해상도에서 이루어지므로 화질 손실이 없다.
+DETECT_MAX_PX = 1280
 
-    def __init__(self, model_path: Path | None = None, score_threshold: float = 0.6):
+
+class FaceDetector:
+    """YuNet 검출기 래퍼. 검출은 정규화된 해상도에서, 좌표는 원본 기준으로."""
+
+    def __init__(self, model_path: Path | None = None, score_threshold: float = 0.6,
+                 max_detect_px: int = DETECT_MAX_PX):
         self.model_path = Path(model_path or MODELS_DIR / "yunet_2023mar.onnx")
         if not self.model_path.exists():
             raise FileNotFoundError(
                 f"{self.model_path} 없음 — scripts/fetch_models.sh 를 먼저 실행하세요")
+        self.max_detect_px = max_detect_px
         self._net = cv2.FaceDetectorYN.create(
             str(self.model_path), "", (320, 320), score_threshold, 0.3, 5000)
 
     def detect(self, bgr: np.ndarray) -> list[FaceGeometry]:
         h, w = bgr.shape[:2]
-        self._net.setInputSize((w, h))
-        _, raw = self._net.detect(bgr)
+        longest = max(h, w)
+        scale = 1.0
+        work = bgr
+        if self.max_detect_px and longest > self.max_detect_px:
+            scale = self.max_detect_px / longest
+            work = cv2.resize(bgr, None, fx=scale, fy=scale,
+                              interpolation=cv2.INTER_AREA)
+
+        wh, ww = work.shape[:2]
+        self._net.setInputSize((ww, wh))
+        _, raw = self._net.detect(work)
         if raw is None:
             return []
+
+        inv = 1.0 / scale
         out = []
         for row in raw:
-            f = row.astype(float)
+            f = row.astype(np.float32).copy()
+            # 0..13 = 박스(4) + 5점 랜드마크(10). 14 = 점수이므로 건드리지 않는다.
+            f[:14] *= inv
+            d = f.astype(float)
             out.append(FaceGeometry(
-                box=(f[0], f[1], f[2], f[3]),
-                right_eye=(f[4], f[5]), left_eye=(f[6], f[7]),
-                nose=(f[8], f[9]),
-                mouth_right=(f[10], f[11]), mouth_left=(f[12], f[13]),
-                score=f[14], raw=row,
+                box=(d[0], d[1], d[2], d[3]),
+                right_eye=(d[4], d[5]), left_eye=(d[6], d[7]),
+                nose=(d[8], d[9]),
+                mouth_right=(d[10], d[11]), mouth_left=(d[12], d[13]),
+                score=d[14], raw=f,          # 원본 좌표계 — alignCrop 이 그대로 쓴다
             ))
         out.sort(key=lambda g: g.box[2] * g.box[3], reverse=True)
         return out
@@ -144,14 +177,11 @@ def crown_from_matte(bgr: np.ndarray, geo: FaceGeometry,
     충분히 다른 첫 행을 정수리로 본다. 생성된 스튜디오 사진에 잘 맞는다.
     반환 실패 시 None — 배경이 균일하지 않다는 뜻이다.
     """
+    from .background import sample_backdrop
+
     h, w = bgr.shape[:2]
-    k = max(4, min(h, w) // 40)
-    corners = np.concatenate([
-        bgr[:k, :k].reshape(-1, 3), bgr[:k, -k:].reshape(-1, 3),
-        bgr[-k:, :k].reshape(-1, 3), bgr[-k:, -k:].reshape(-1, 3)])
-    bg = np.median(corners, axis=0)
-    # 모서리들끼리 서로 많이 다르면 균일 배경이 아니다
-    if float(np.median(np.abs(corners - bg))) > tol:
+    bg, _ = sample_backdrop(bgr, tol)
+    if bg is None:                     # 균일 배경이 아니다
         return None
 
     band = max(8, int(geo.box[2] * 0.35))

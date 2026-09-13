@@ -37,6 +37,7 @@ class Candidate:
     aesthetic: float = 0.0
     neutrality: float = 0.0
     skin_delta_L: float = 0.0
+    skin_chroma_shift: float = 0.0
     score: float = 0.0
     rejected: str | None = None            # 탈락 사유 (None이면 통과)
 
@@ -46,16 +47,23 @@ class Candidate:
     blemishes_removed: int = 0
 
 
-def _skin_L(bgr: np.ndarray, geo: FaceGeometry) -> float:
-    """얼굴 중앙부(볼·이마)의 CIE L* 중앙값. 모델의 톤 밝히기 편향을 잡는 지표."""
+def _skin_lab(bgr: np.ndarray, geo: FaceGeometry) -> tuple[float, float, float]:
+    """얼굴 중앙부(볼·이마)의 CIE Lab 중앙값. L* 은 0..100 스케일."""
     x, y, w, h = geo.box
     x0, y0 = int(x + w * 0.25), int(y + h * 0.30)
     x1, y1 = int(x + w * 0.75), int(y + h * 0.75)
     patch = bgr[max(0, y0):y1, max(0, x0):x1]
     if patch.size == 0:
-        return 0.0
+        return (0.0, 0.0, 0.0)
     lab = cv2.cvtColor(patch, cv2.COLOR_BGR2LAB)
-    return float(np.median(lab[:, :, 0])) * 100.0 / 255.0
+    return (float(np.median(lab[:, :, 0])) * 100.0 / 255.0,
+            float(np.median(lab[:, :, 1])) - 128.0,
+            float(np.median(lab[:, :, 2])) - 128.0)
+
+
+def _skin_L(bgr: np.ndarray, geo: FaceGeometry) -> float:
+    """얼굴 중앙부의 CIE L* 중앙값(0..100)."""
+    return _skin_lab(bgr, geo)[0]
 
 
 # 규격 크롭(413x531)을 256px로 맞춰 잰 라플라시안 분산의 실측 범위
@@ -111,7 +119,8 @@ def _spec_score(fr: FramingResult | None) -> float:
     return float(inside * (1.0 - min(1.0, fr.out_of_frame * 20)))
 
 
-def evaluate(cand: Candidate, reference: np.ndarray, ref_skin_L: float,
+def evaluate(cand: Candidate, reference: np.ndarray,
+             ref_skin: float | tuple[float, float, float],
              cfg: QAConfig | None = None) -> Candidate:
     """후보 하나를 채점한다. 하드 게이트 실패 시 rejected 를 채운다."""
     cfg = cfg or QAConfig()
@@ -129,7 +138,11 @@ def evaluate(cand: Candidate, reference: np.ndarray, ref_skin_L: float,
     cand.neutrality = _neutrality(cand.face)
     sym = _eye_symmetry(cand.face)
     cand.aesthetic = float(0.5 * sym + 0.3 * cand.quality + 0.2 * cand.neutrality)
-    cand.skin_delta_L = _skin_L(cand.image, cand.face) - ref_skin_L
+    ref_lab = ref_skin if isinstance(ref_skin, tuple) else (ref_skin, 0.0, 0.0)
+    L, a, b = _skin_lab(cand.image, cand.face)
+    cand.skin_delta_L = L - ref_lab[0]
+    cand.skin_chroma_shift = float(np.hypot(a - ref_lab[1], b - ref_lab[2])) \
+        if isinstance(ref_skin, tuple) else 0.0
 
     # --- 하드 게이트 ---
     if cand.id_cos < cfg.tau_id:
@@ -138,8 +151,10 @@ def evaluate(cand: Candidate, reference: np.ndarray, ref_skin_L: float,
         cand.rejected = f"규격 이탈 (머리 {cand.framing.head_mm:.1f}mm)"
     elif sym < 0.55:
         cand.rejected = f"얼굴 비대칭 아티팩트 (대칭도 {sym:.2f})"
+    elif cand.skin_chroma_shift > cfg.max_skin_chroma_shift:
+        cand.rejected = f"피부 색조 이동 과다 (Δchroma {cand.skin_chroma_shift:.1f})"
     elif abs(cand.skin_delta_L) > cfg.max_skin_delta_L:
-        cand.rejected = f"피부톤 이동 과다 (ΔL* {cand.skin_delta_L:+.1f})"
+        cand.rejected = f"피부 밝기 이동 극단 (ΔL* {cand.skin_delta_L:+.1f})"
 
     cand.score = (cfg.w_identity * cand.id_cos
                   + cfg.w_quality * cand.quality

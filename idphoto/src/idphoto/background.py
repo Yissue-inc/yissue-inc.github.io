@@ -47,15 +47,33 @@ def studio_backdrop(size: tuple[int, int], preset: str = "light_gray",
     return np.clip(bg, 0, 255).astype(np.uint8)
 
 
-def matte_uniform(bgr: np.ndarray, tol: int = 26) -> np.ndarray | None:
-    """배경이 균일할 때 색 거리로 알파 매트를 뽑는다. 실패 시 None."""
+def sample_backdrop(bgr: np.ndarray, tol: int = 26) -> tuple[np.ndarray | None, float]:
+    """증명사진의 배경색을 추정한다. (배경 BGR, 일관성) — 실패 시 (None, spread).
+
+    **아래쪽 모서리를 쓰면 안 된다.** 제대로 구도가 잡힌 증명사진은 어깨가
+    하단 가장자리까지 닿으므로, 아래 모서리에 있는 것은 배경이 아니라 옷이다.
+    실측(인핸즈 출력): 네 모서리 전부 → 일관성 116(허용치 26의 4배, 추정 실패),
+    위쪽 모서리만 → 일관성 0.0~0.5(완벽).
+
+    위쪽 모서리와 어깨선 위 좌우 띠만 본다.
+    """
     h, w = bgr.shape[:2]
     k = max(4, min(h, w) // 40)
-    corners = np.concatenate([
-        bgr[:k, :k].reshape(-1, 3), bgr[:k, -k:].reshape(-1, 3),
-        bgr[-k:, :k].reshape(-1, 3), bgr[-k:, -k:].reshape(-1, 3)])
-    bg = np.median(corners, axis=0)
-    if float(np.median(np.abs(corners - bg))) > tol:
+    side = max(3, int(w * 0.04))
+    upper = int(h * 0.45)                      # 어깨선보다 확실히 위
+
+    patches = [bgr[:k, :k].reshape(-1, 3), bgr[:k, -k:].reshape(-1, 3),
+               bgr[:upper, :side].reshape(-1, 3), bgr[:upper, -side:].reshape(-1, 3)]
+    ref = np.concatenate(patches)
+    bg = np.median(ref, axis=0)
+    spread = float(np.median(np.abs(ref - bg)))
+    return (bg if spread <= tol else None), spread
+
+
+def matte_uniform(bgr: np.ndarray, tol: int = 26) -> np.ndarray | None:
+    """배경이 균일할 때 색 거리로 알파 매트를 뽑는다. 실패 시 None."""
+    bg, _ = sample_backdrop(bgr, tol)
+    if bg is None:
         return None
 
     diff = np.abs(bgr.astype(np.int16) - bg.astype(np.int16)).max(axis=2)
