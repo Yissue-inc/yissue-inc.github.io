@@ -15,12 +15,34 @@ python -m idphoto run   photo*.jpg --spec id_kr --n 12 --out out/order
 python -m idphoto check out/order/*.jpg     # AI 생성 표시 확인
 ```
 
-Gemini 로 실제 생성하려면:
+Gemini 로 실제 생성하려면 — **키는 `ai_keys` 프로토콜로만 받는다**:
 
 ```bash
-export GEMINI_API_KEY=...
-python -m idphoto run photo*.jpg --provider gemini --model gemini-3.1-flash-image
+# 1) 파일럿 1장으로 실제 비용을 잰다 (추측 금액 금지)
+python3 Hermes/automation/ai_keys.py run gemini \
+  --purpose "증명사진 파일럿 1장" --est-usd 0.07 --model gemini-3.1-flash-image \
+  -- python -m idphoto run photos/*.jpg --provider gemini \
+     --model gemini-3.1-flash-image --n 1 --present 1
+
+# 2) 파일럿 결과의 est_usd_next_run 값을 그대로 --est-usd 에 넣어 본 실행
+python3 Hermes/automation/ai_keys.py run gemini \
+  --purpose "증명사진 12장 생성" --est-usd <파일럿 실측값> --model gemini-3.1-flash-image \
+  -- python -m idphoto run photos/*.jpg --provider gemini \
+     --model gemini-3.1-flash-image --n 12 --out out/order
+
+# 3) 끝나면 실제 비용 기록
+python3 Hermes/automation/ai_keys.py log <job-id> --usd <실제> --model gemini-3.1-flash-image
 ```
+
+CLI 가 `ai_keys.py` 를 못 찾으면 환경변수를 확인하고, 그것도 없으면 **멈추고
+환경별 해결 방법을 출력한다.** 키를 채팅으로 요청하지 않는다.
+
+> ⛔ `export GEMINI_API_KEY=$(grep ... .env | cut -d= -f2)` 같은 방식은 쓰지 않는다.
+> 명령 기록·로그·ps 에 남고 금액 기준과 원장을 모두 우회한다.
+>
+> ⛔ 키가 어느 파일에 있는지 **코드를 읽어 추측하지 않는다.** `ai_keys.py status`
+> 로 확인한다. (`geo_measure.py` 가 `geo_measure.env` 를 읽는다고 해서 그 파일에
+> Gemini 키가 있는 것이 아니다 — 실제로는 `gemini.env` 에 있다.)
 
 ## 파이프라인
 
@@ -35,6 +57,7 @@ python -m idphoto run photo*.jpg --provider gemini --model gemini-3.1-flash-imag
 | S8 | `framing.py` | 규격 크롭 + 사후 검증 |
 | S9 | `qa.py` | 하드 게이트 → 가중 스코어 → MMR 다양성 선발 |
 | — | `provenance.py` | AI 생성 표시 메타데이터 |
+| — | `keys.py` | `ai_keys` 프로토콜 브리지 — 키를 직접 읽지 않는다 |
 
 ### S7 리터칭 — 사진관 워크플로 순서 그대로
 

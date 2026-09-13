@@ -35,6 +35,7 @@ class OrderResult:
     selected: list[qa.Candidate] = field(default_factory=list)
     reference_spread: float = 0.0
     cost_usd: float = 0.0
+    usage: dict = field(default_factory=dict)   # 프로바이더가 보고한 실제 토큰 사용량
     elapsed_s: float = 0.0
     errors: list[str] = field(default_factory=list)
 
@@ -113,6 +114,9 @@ class Pipeline:
                 references=refs, preset=preset, prompt=prompts.build(preset),
                 seed=seed + i))
             res.cost_usd += gen.cost_usd
+            for k, v in (gen.meta.get("usage") or {}).items():
+                if isinstance(v, (int, float)):
+                    res.usage[k] = res.usage.get(k, 0) + v
             if not gen.ok:
                 res.errors.append(f"[{preset.key}] {gen.error}")
                 continue

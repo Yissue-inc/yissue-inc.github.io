@@ -17,6 +17,7 @@ from .config import DEFAULT
 from .detect import FaceAnalyzer
 from .gating import evaluate as gate_eval
 from .pipeline import Pipeline
+from .keys import KeyUnavailable, acquire
 from .provenance import read_disclosure
 from .specs import SPECS
 
@@ -56,6 +57,17 @@ def cmd_run(args) -> int:
         print("읽을 수 있는 사진이 없습니다", file=sys.stderr)
         return 1
 
+    if args.provider != "mock":
+        # 키는 ai_keys 프로토콜로만 받는다 — 파일을 직접 읽지 않는다.
+        try:
+            src = acquire(args.provider, purpose=args.purpose,
+                          est_usd=args.est_usd, model=args.model,
+                          approval=args.approval)
+        except KeyUnavailable as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+        print(f"키 출처: {src}", file=sys.stderr)
+
     pipe = Pipeline(provider=args.provider, model=args.model)
     try:
         res = pipe.run([img for _, img in loaded], spec_key=args.spec,
@@ -65,7 +77,12 @@ def cmd_run(args) -> int:
         print(f"중단: {exc}", file=sys.stderr)
         return 1
 
-    print(json.dumps(res.summary(), ensure_ascii=False, indent=2))
+    summary = res.summary()
+    if res.usage:
+        summary["usage"] = res.usage
+        summary["est_usd_next_run"] = round(
+            res.cost_usd / max(1, summary["generated"]) * args.n, 4)
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
     print("\n선발 결과")
     for rank, c in enumerate(res.selected, 1):
         fr = c.framing
@@ -113,6 +130,12 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--seed", type=int, default=0)
     r.add_argument("--out", default=None, help="저장 디렉터리")
     r.add_argument("--preview", action="store_true", help="가시 워터마크 적용")
+    r.add_argument("--purpose", default="증명사진 생성",
+                   help="ai_keys 원장에 남길 목적")
+    r.add_argument("--est-usd", type=float, default=0.0,
+                   help="예상 비용(USD). 파일럿으로 잰 값을 넣을 것 — 추측 금지")
+    r.add_argument("--approval", default=None,
+                   help="금액 기준 초과 시 CK 승인 id")
     r.set_defaults(fn=cmd_run)
 
     c = sub.add_parser("check", help="AI 생성 표시 확인")
