@@ -68,11 +68,18 @@ def cmd_run(args) -> int:
             return 2
         print(f"키 출처: {src}", file=sys.stderr)
 
+    presets = None
+    if args.wardrobe or args.backdrop:
+        from . import prompts
+        presets = prompts.grid(
+            [args.wardrobe] if args.wardrobe else None,
+            [args.backdrop] if args.backdrop else None)
+
     pipe = Pipeline(provider=args.provider, model=args.model)
     try:
         res = pipe.run([img for _, img in loaded], spec_key=args.spec,
                        n_generate=args.n, n_present=args.present,
-                       retouch=args.retouch, seed=args.seed)
+                       retouch=args.retouch, seed=args.seed, presets=presets)
     except ValueError as exc:
         print(f"중단: {exc}", file=sys.stderr)
         return 1
@@ -128,6 +135,9 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--present", type=int, default=5, help="노출 장수")
     r.add_argument("--retouch", type=float, default=0.5, help="보정 강도 0..1")
     r.add_argument("--seed", type=int, default=0)
+    r.add_argument("--wardrobe", default=None,
+                   help="의상 프리셋 고정 (suit_black·suit_navy·shirt_white…)")
+    r.add_argument("--backdrop", default=None, help="배경 프리셋 고정 (white·light_gray…)")
     r.add_argument("--out", default=None, help="저장 디렉터리")
     r.add_argument("--preview", action="store_true", help="가시 워터마크 적용")
     r.add_argument("--purpose", default="증명사진 생성",

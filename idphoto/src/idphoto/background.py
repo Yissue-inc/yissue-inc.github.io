@@ -85,6 +85,7 @@ def matte_uniform(bgr: np.ndarray, tol: int = 26) -> np.ndarray | None:
     if bg is None:
         return None
 
+    h, w = bgr.shape[:2]
     diff = np.abs(bgr.astype(np.int16) - bg.astype(np.int16)).max(axis=2)
     alpha = np.clip((diff.astype(np.float32) - tol) / (tol * 1.6), 0, 1)
 
