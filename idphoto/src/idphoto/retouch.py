@@ -35,7 +35,7 @@ class RetouchSettings:
     blemish: float = 0.85           # 2. 잡티 힐링 강도
     blemish_sensitivity: float = 0.50
     preserve_moles: bool = True     #    점·주근깨 보존
-    redness: float = 0.45           #    홍조 완화
+    redness: float = 0.20           #    홍조 완화 (실측 근거로 하향)
     skin_even: float = 0.35         # 3. 저주파 톤 고르기 (힐링이 있으니 약하게)
     under_eye: float = 0.40         # 4. 다크서클 밝히기
     nasolabial: float = 0.25        #    팔자주름 그림자 완화
@@ -62,7 +62,9 @@ class RetouchSettings:
         t = float(np.clip(t, 0.0, 1.0))
         return cls(
             white_balance=0.80 * t, blemish=1.00 * t, blemish_sensitivity=0.50,
-            redness=0.65 * t, skin_even=0.50 * t,
+            # 레퍼런스 출력은 입력 대비 Δa* +0.0 — 붉은기를 거의 건드리지 않았다.
+            # 상한 0.65 는 그보다 훨씬 공격적이었으므로 0.30 으로 낮춘다.
+            redness=0.30 * t, skin_even=0.50 * t,
             under_eye=0.55 * t, nasolabial=0.35 * t, contour=0.40 * t,
             local_contrast=0.35 * t,
             sclera=0.55 * t, iris_clarity=0.60 * t, teeth=0.50 * t,
