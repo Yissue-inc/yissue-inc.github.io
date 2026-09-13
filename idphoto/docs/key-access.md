@@ -22,7 +22,30 @@
 |---|---|
 | CK 로컬 맥 | `ai_keys.py` → `Hermes/.secrets/*.env` |
 | VPS 컨테이너 | `ai_keys.py` → `/app/.secrets/*.env` |
-| **클라우드 에이전트 (이 세션)** | 환경 시크릿에 등록된 것만. 없으면 로컬로 핸드오프 |
+| **클라우드 에이전트 (이 세션)** | ① API credential(권장) ② 환경변수 ③ 로컬 핸드오프 |
+
+### 클라우드 환경에 붙이는 두 방법
+
+| | API credential | 환경변수 |
+|---|---|---|
+| 키가 샌드박스에 들어오나 | **아니오** — 프록시가 VM 밖에서 헤더를 붙인다 | 예 — `os.environ` 에 그대로 |
+| 에이전트가 키를 볼 수 있나 | **볼 수 없다** | 볼 수 있다 |
+| 실행 중인 세션에 적용 | 프록시가 요청 시점에 붙이므로 적용됨 | **안 됨** — 세션 시작 시 1회 복사. 새 세션 필요 |
+| 환경 사용자 전원에게 노출 | 값 열람 불가 | "누구나 값을 읽을 수 있음"(공식 문서) |
+| 요금제 | Pro·Max 만 (Team·Enterprise 미지원) | 전 요금제 |
+
+**API credential 을 권장한다.** 키 유출 경로가 원천적으로 없다.
+
+Gemini 등록값:
+- Allowed websites: `generativelanguage.googleapis.com`
+- Custom headers: Name `x-goog-api-key`, **Prefix 비움**, Value = 키
+
+`GeminiProvider(auth="proxy")` 가 이 경로를 쓴다. 키를 쿼리스트링(`?key=`)이 아니라
+헤더로 보내도록 바꿨다 — URL 은 로그에 남지만 헤더는 남지 않는다.
+
+검증(2026-09-13): credential 없이 호출하면
+`403 PERMISSION_DENIED — Method doesn't allow unregistered callers` 가 온다.
+요청이 구글까지 정상 도달한다는 뜻이고, credential 만 붙으면 200 이 된다.
 
 이 세션 환경: `Default` (`env_01YVKtuJRdGZcKd4BkW7rCCe`, anthropic_cloud).
 

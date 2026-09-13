@@ -39,7 +39,7 @@ class GeminiProvider:
 
     def __init__(self, model: str = "gemini-3.1-flash-image",
                  api_key: str | None = None, timeout: float = 120.0,
-                 max_reference_px: int = 1280, **_):
+                 max_reference_px: int = 1280, auth: str = "auto", **_):
         self.model = model
         self.timeout = timeout
         self.max_reference_px = max_reference_px
@@ -47,9 +47,17 @@ class GeminiProvider:
         if model in DEPRECATED:
             raise ValueError(f"{model}: {DEPRECATED[model]}")
 
+        # 인증 방식 두 가지:
+        #   "key"   — 우리가 키를 가지고 있다. x-goog-api-key 헤더로 보낸다.
+        #   "proxy" — 키를 모른다. 에이전트 프록시가 요청이 VM 을 떠난 뒤
+        #             헤더를 붙인다(클라우드 환경의 API credential). 키가
+        #             샌드박스에 들어오지 않으므로 유출 경로가 없다.
+        self.auth = auth if auth != "auto" else ("key" if self.api_key else "proxy")
+
     @property
     def configured(self) -> bool:
-        return bool(self.api_key)
+        """proxy 모드는 키 없이도 시도할 수 있다 — 인증 실패는 호출 결과로 안다."""
+        return self.auth == "proxy" or bool(self.api_key)
 
     # --- 내부 ---
     def _encode(self, bgr: np.ndarray) -> dict:
@@ -94,7 +102,7 @@ class GeminiProvider:
 
         base = GenerationResult(None, self.name, self.model, req.preset, req.seed)
         if not self.configured:
-            base.error = "GEMINI_API_KEY 가 설정되지 않았습니다"
+            base.error = "인증이 설정되지 않았습니다 (키도, 프록시 credential 도 없음)"
             return base
         if not req.references:
             base.error = "참조 이미지 없음"
@@ -107,19 +115,30 @@ class GeminiProvider:
         if req.seed is not None:
             body["generationConfig"]["seed"] = int(req.seed)
 
+        headers = {"Content-Type": "application/json"}
+        if self.auth == "key":
+            # 쿼리스트링(?key=)이 아니라 헤더로 보낸다. URL 은 프록시 로그·
+            # 접근 로그에 남지만 헤더는 그렇지 않다.
+            headers["x-goog-api-key"] = self.api_key
+
         t0 = time.perf_counter()
         try:
             resp = requests.post(
                 f"{API_ROOT}/{self.model}:generateContent",
-                params={"key": self.api_key},
-                json=body, timeout=self.timeout,
-                headers={"Content-Type": "application/json"})
+                json=body, timeout=self.timeout, headers=headers)
         except Exception as exc:
             base.error = f"요청 실패: {exc}"
             base.latency_ms = (time.perf_counter() - t0) * 1000
             return base
 
         base.latency_ms = (time.perf_counter() - t0) * 1000
+        if resp.status_code in (401, 403) and self.auth == "proxy":
+            base.error = (
+                f"HTTP {resp.status_code} — 에이전트 프록시가 인증 헤더를 붙이지 "
+                f"않았습니다. 클라우드 환경의 API credential 을 확인하세요: "
+                f"호스트 generativelanguage.googleapis.com, 헤더 x-goog-api-key "
+                f"(Prefix 비움). 상세: {resp.text[:200]}")
+            return base
         if resp.status_code != 200:
             base.error = f"HTTP {resp.status_code}: {resp.text[:300]}"
             return base

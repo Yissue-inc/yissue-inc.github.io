@@ -48,7 +48,8 @@ def _find_ai_keys() -> Path | None:
 
 
 def acquire(alias: str = "gemini", *, purpose: str, est_usd: float,
-            model: str | None = None, approval: str | None = None) -> str:
+            model: str | None = None, approval: str | None = None,
+            allow_proxy: bool = True) -> str:
     """키를 확보하고 출처 문자열을 돌려준다. 키 값은 반환하지 않는다.
 
     성공하면 `os.environ[ENV_VAR[alias]]` 가 채워져 있다.
@@ -73,6 +74,11 @@ def acquire(alias: str = "gemini", *, purpose: str, est_usd: float,
     if os.environ.get(var):
         # 클라우드 에이전트: 환경 시크릿에 등록된 경우
         return f"환경변수 {var}"
+
+    if allow_proxy:
+        # 클라우드 환경의 API credential 일 수 있다. 키는 샌드박스에 들어오지
+        # 않으므로 여기서 확인할 방법이 없다 — 호출해 보고 401/403 이면 안다.
+        return "에이전트 프록시 credential (추정 — 호출로 확인)"
 
     raise KeyUnavailable(
         f"'{alias}' 키를 얻지 못했습니다.\n"
