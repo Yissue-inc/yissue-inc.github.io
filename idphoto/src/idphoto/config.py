@@ -81,10 +81,66 @@ class QAConfig:
     max_retry_rounds: int = 2
 
 
+#: 컴포넌트별 라이선스 등급.
+#:
+#: 품질 탐색을 라이선스로 막지 않되, 무엇을 쓰고 있는지는 항상 보이게 한다.
+#: "research" 모드는 뭐든 쓴다 — 품질 상한을 재는 단계에서는 그게 맞다.
+#: "commercial" 모드는 정리된 것만 쓴다. 모드를 바꾸는 것만으로 출시 전에
+#: 무엇을 구매하거나 교체해야 하는지가 자동으로 목록화된다.
+LICENSE_TIERS: dict[str, dict] = {
+    # 상용 자유
+    "yunet":        {"license": "Apache-2.0", "commercial": True},
+    "sface":        {"license": "Apache-2.0", "commercial": True},
+    "mediapipe":    {"license": "Apache-2.0", "commercial": True},
+    "birefnet":     {"license": "MIT", "commercial": True},
+    "ic-light":     {"license": "Apache-2.0", "commercial": True},
+    "gfpgan":       {"license": "Apache-2.0", "commercial": True,
+                     "note": "제3자 컴포넌트 목록 별도 확인 필요"},
+    "qwen-image-edit": {"license": "Apache-2.0", "commercial": True},
+    # 유료 계약으로 상용 가능
+    "insightface":  {"license": "non-commercial (모델)", "commercial": False,
+                     "note": "InsightFace 가 상용 라이선스를 판매한다 — 구매 결정 사안"},
+    "inswapper":    {"license": "non-commercial (모델)", "commercial": False,
+                     "note": "contact@insightface.ai 로 상용 라이선스 문의"},
+    "rmbg-2.0":     {"license": "BRIA 상용 유료", "commercial": False,
+                     "note": "BRIA 와 계약 시 사용 가능"},
+    # 상용 경로 없음
+    "codeformer":   {"license": "S-Lab 1.0 (non-commercial)", "commercial": False,
+                     "note": "상용 경로 없음 — GFPGAN/DiffBIR 로 교체할 것"},
+}
+
+
+def license_audit(components: list[str], mode: str = "commercial") -> list[str]:
+    """이 모드에서 쓸 수 없는 컴포넌트를 돌려준다. research 모드는 항상 빈 목록."""
+    if mode == "research":
+        return []
+    out = []
+    for c in components:
+        info = LICENSE_TIERS.get(c)
+        if info is None:
+            out.append(f"{c}: 라이선스 미확인")
+        elif not info["commercial"]:
+            out.append(f"{c}: {info['license']}"
+                       + (f" — {info['note']}" if info.get("note") else ""))
+    return out
+
+
 @dataclass(frozen=True)
 class Config:
     gate: GateConfig = field(default_factory=GateConfig)
     qa: QAConfig = field(default_factory=QAConfig)
+
+    licensing: str = "commercial"
+    """"commercial" | "research".
+
+    품질 상한을 탐색할 때는 "research", 출시 경로에서는 "commercial".
+    파이프라인이 시작할 때 license_audit 으로 확인하고 경고를 남긴다.
+    """
+
+    retouch_intensity: float = 0.5
+    retouch_preset: str = "for_generated"   # from_intensity | for_generated | senior | natural
+    identity_budget: float = 0.05
+    """리터칭이 써도 되는 최대 유사도 손실. 초과하면 강도를 자동으로 낮춘다."""
 
 
 DEFAULT = Config()

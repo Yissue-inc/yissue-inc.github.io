@@ -19,7 +19,8 @@ from .detect import FaceAnalyzer
 from .framing import frame_to_spec
 from .generate import GenerationRequest, get_provider
 from .identity import IdentityEncoder
-from .retouch import RetouchSettings, apply as retouch_apply
+from . import retouch as retouch_mod
+from .retouch import RetouchSettings
 from .specs import PhotoSpec, get_spec
 
 
@@ -126,9 +127,14 @@ class Pipeline:
         res.elapsed_s = time.perf_counter() - t0
         return res
 
+    def _retouch_settings(self, intensity: float) -> RetouchSettings:
+        factory = getattr(RetouchSettings, self.cfg.retouch_preset,
+                          RetouchSettings.for_generated)
+        return factory(intensity)
+
     def _postprocess(self, img: np.ndarray, preset, spec: PhotoSpec,
                      retouch: float, seed: int, vid: str) -> qa.Candidate | None:
-        """S8 규격 크롭 → S7 리터칭 → 재분석 → 임베딩."""
+        """S8 규격 크롭 → S7 리터칭(예산 가드) → 재분석 → 임베딩."""
         faces = self.analyzer.analyze(img)
         if not faces or faces[0].crown is None:
             return None
@@ -140,16 +146,32 @@ class Pipeline:
         refaces = self.analyzer.analyze(framed.image)
         if not refaces:
             return None
-        final = retouch_apply(framed.image, refaces[0],
-                              RetouchSettings.for_generated(retouch), seed=seed)
+        pre_emb = self.encoder.embed(framed.image, refaces[0])
+
+        def measure(candidate: np.ndarray) -> float:
+            """리터칭이 유사도를 얼마나 깎았는지. 리터칭 직전 대비로 잰다."""
+            g = self.analyzer.analyze(candidate)
+            if not g:
+                return -1.0
+            return self.encoder.cosine(pre_emb,
+                                       self.encoder.embed(candidate, g[0])) - 1.0
+
+        final, rep, delta, factor = retouch_mod.apply_within_budget(
+            framed.image, refaces[0], measure,
+            settings=self._retouch_settings(retouch),
+            budget=self.cfg.identity_budget, seed=seed)
 
         post = self.analyzer.analyze(final)
         if not post:
             return None
-        return qa.Candidate(
+        cand = qa.Candidate(
             variant_id=vid, image=final, preset=preset.as_dict(),
             face=post[0], embedding=self.encoder.embed(final, post[0]),
             framing=framed)
+        cand.retouch_delta = delta
+        cand.retouch_factor = factor
+        cand.blemishes_removed = rep.blemishes.count
+        return cand
 
     # ---- 딜리버리 ----------------------------------------------------
     def deliver(self, res: OrderResult, out_dir: str | Path,

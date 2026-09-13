@@ -31,10 +31,18 @@ python -m idphoto run photo*.jpg --provider gemini --model gemini-3.1-flash-imag
 | S2 | `identity.py` | SFace 임베딩, 이상치 제외 평균 |
 | S3 | `generate/` | 생성 프로바이더 (mock · Gemini) |
 | S6 | `background.py` | 매팅 + 스튜디오 배경 + 키라이트 근사 |
-| S7 | `retouch.py` | 주파수 분리 리터칭, 닷지&번, 그레이딩, 그레인 |
+| S7 | `retouch.py` · `blemish.py` · `regions.py` | 프로 리터칭 13단계 (아래) |
 | S8 | `framing.py` | 규격 크롭 + 사후 검증 |
 | S9 | `qa.py` | 하드 게이트 → 가중 스코어 → MMR 다양성 선발 |
 | — | `provenance.py` | AI 생성 표시 메타데이터 |
+
+### S7 리터칭 — 사진관 워크플로 순서 그대로
+
+색보정 → **잡티 힐링** → 홍조 → 주파수 분리 → 다크서클 → 팔자주름 → T존/턱선 윤곽 →
+국소대비 → 공막/홍채 → 치아 → 선택적 디테일 샤프닝 → 그레이딩 → 출력 샤프닝 → 그레인.
+
+전역 스무딩을 쓰지 않는 것이 핵심이다. 잡티를 개별로 지우기 때문에 주파수 분리를
+약하게 걸어도 되고, 그래야 모공·솜털·잔주름이 살아남는다.
 
 품질 임계값은 전부 [`config.py`](src/idphoto/config.py) 한 곳에 있고, 각 값에 실측 근거를 적어 두었다.
 
@@ -50,8 +58,20 @@ python -m idphoto run photo*.jpg --provider gemini --model gemini-3.1-flash-imag
 **고주파를 보존한다.** 리터칭은 주파수 분리로 저주파(피부톤·음영)만 고르고 모공·솜털·잔주름은
 그대로 둔다. 여기를 뭉개면 즉시 'AI 티'가 난다. 보정 강도 0은 진짜로 아무것도 하지 않는다.
 
-**유사도를 계속 측정한다.** 후처리 전후 `Δcos`를 재서 0.05를 넘으면 강도를 낮춘다.
-현재 최대 강도에서 -0.032로 여유가 있다.
+**아이덴티티 예산을 자동으로 지킨다.** `apply_within_budget` 이 리터칭 후 `Δcos` 를
+재고, 0.05 예산을 넘으면 전체 강도를 70% → 45% → 25% 로 물러선다. 리터처가 마지막에
+"아직 이 사람으로 보이나"를 확인하는 것과 같은 일이다. 실측 단계별 비용은
+[`docs/retouch-calibration.md`](docs/retouch-calibration.md).
+
+**점을 지우지 않는다.** 잡티 검출기가 여드름(어둡고 **붉다**)과 점(어둡고 **붉지 않다**)을
+구분해 후자는 보존한다. 점은 본인을 식별하는 특징이다.
+
+**제거 면적에 상한이 있다.** 검출기는 완벽하지 않으므로 총 제거 면적을 피부의 1.5%로
+묶고, 확신이 큰 후보부터 채운다. 기질이 나빠도 피해가 무한정 커지지 않는다.
+
+**라이선스는 스위치다.** `Config.licensing` 이 `"research"`(품질 상한 탐색 — 뭐든 씀)와
+`"commercial"`(정리된 것만) 을 가른다. `license_audit()` 이 출시 전 구매·교체 목록을
+자동으로 뽑는다.
 
 ## 알려진 한계
 
@@ -61,6 +81,9 @@ python -m idphoto run photo*.jpg --provider gemini --model gemini-3.1-flash-imag
 - **mock 프로바이더는 의상을 바꾸지 못한다.** 배경·조명만 합성한다. 하류 단계 검증용이다.
 - **mock 경로가 느리다** (GrabCut 때문에 장당 ~15초). Gemini 경로에는 해당 없다.
 - **SFace 임계값이 미검증이다.** 실사용 클레임률로 재보정 필요.
+- **잡티 검출 재현율이 낮다.** 합성 평가에서 재현율 0.42 / 정밀도 0.53 (필름 그레인이
+  심한 적대적 기질 기준). 실사진으로 재보정이 필요하다 — 자세한 수치는
+  [`docs/retouch-calibration.md`](docs/retouch-calibration.md).
 
 ## 법적 주의
 

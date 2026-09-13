@@ -40,6 +40,11 @@ class Candidate:
     score: float = 0.0
     rejected: str | None = None            # 탈락 사유 (None이면 통과)
 
+    # 리터칭 진단 — 예산 가드가 실제로 물러섰는지 추적한다
+    retouch_delta: float = 0.0
+    retouch_factor: float = 1.0
+    blemishes_removed: int = 0
+
 
 def _skin_L(bgr: np.ndarray, geo: FaceGeometry) -> float:
     """얼굴 중앙부(볼·이마)의 CIE L* 중앙값. 모델의 톤 밝히기 편향을 잡는 지표."""
