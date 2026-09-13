@@ -129,7 +129,100 @@ def cmd_check(args) -> int:
     return 0
 
 
+def cmd_doctor(args) -> int:
+    """실행 준비 상태 점검. 생성 호출 전에 막힐 곳을 미리 찾는다."""
+    import requests
+
+    from .generate.models import MODELS
+    ok = True
+
+    print("모델 파일")
+    from .detect import MODELS_DIR
+    for f in ("yunet_2023mar.onnx", "sface_2021dec.onnx", "face_landmarker.task"):
+        p = MODELS_DIR / f
+        mark = "✓" if p.exists() else "✗"
+        ok &= p.exists()
+        size = f"{p.stat().st_size/1e6:.1f}MB" if p.exists() else "없음 — fetch_models.sh"
+        print(f"  {mark} {f:28s} {size}")
+
+    print("\n의존성")
+    for m in ("cv2", "numpy", "PIL", "piexif"):
+        try:
+            __import__(m); print(f"  ✓ {m}")
+        except ImportError:
+            print(f"  ✗ {m} — pip install -r requirements.txt"); ok = False
+    try:
+        from .detect import FaceAnalyzer
+        print(f"  {'✓' if FaceAnalyzer().landmarker_available else '!'} mediapipe "
+              f"{'(478점 랜드마크 사용 가능)' if FaceAnalyzer().landmarker_available else '(폴백 모드)'}")
+    except Exception as exc:
+        print(f"  ! mediapipe — {str(exc)[:60]}")
+
+    print("\n생성 API 인증")
+    try:
+        r = requests.get("https://generativelanguage.googleapis.com/v1beta/models",
+                         timeout=30)
+        if r.status_code == 200:
+            ids = {m["name"].split("/")[-1] for m in r.json().get("models", [])}
+            print("  ✓ 인증됨")
+            for name in MODELS:
+                if MODELS[name].deprecated:
+                    continue
+                print(f"    {'✓' if name in ids else '?'} {name}")
+        elif r.status_code in (401, 403):
+            ok = False
+            print(f"  ✗ HTTP {r.status_code} — 인증 정보가 붙지 않았습니다.")
+            print("    클라우드 환경 API credential 확인:")
+            print("      Allowed websites : generativelanguage.googleapis.com")
+            print("      Custom header    : x-goog-api-key  (Prefix 비움)")
+            print("      목록에 'Not sent' 표시가 있으면 그 아래 사유를 보세요.")
+            print("    또는 GEMINI_API_KEY 환경변수 + 새 세션.")
+        else:
+            ok = False
+            print(f"  ✗ HTTP {r.status_code}: {r.text[:120]}")
+    except Exception as exc:
+        ok = False
+        print(f"  ✗ 연결 실패: {str(exc)[:100]}")
+
+    print(f"\n{'준비 완료' if ok else '위 ✗ 항목을 해결해야 실행할 수 있습니다'}")
+    return 0 if ok else 1
+
+
+def _silence_mediapipe_teardown() -> None:
+    """MediaPipe 가 인터프리터 종료 중에 뱉는 트레이스백만 숨긴다.
+
+    MediaPipe 의 FaceLandmarker.__del__ 은 종료 중에 이미 내려간 내부 실행기를
+    건드리다 실패한다. 두 가지 형태로 나온다:
+      RuntimeError: cannot schedule new futures after shutdown
+      TypeError: 'NoneType' object is not callable   (모듈 전역이 해제된 뒤)
+    둘 다 무해하지만 모든 실행 끝에 트레이스백이 찍혀 진짜 오류처럼 보인다.
+    특히 파일럿 결과를 붙여넣어 공유할 때 혼란을 준다.
+
+    라이브러리를 건드리는 대신 CLI 경계에서 **mediapipe 의 finalizer 에서 난
+    것만** 거른다. 다른 unraisable 예외는 그대로 보고한다.
+
+    __del__ 에서 난 예외의 unraisable.object 는 인스턴스가 아니라 그 __del__
+    함수 객체다 — 그래서 함수의 __module__/__qualname__ 으로 판정한다.
+    """
+    prev = sys.unraisablehook
+
+    def hook(unraisable):
+        try:
+            obj = unraisable.object
+            where = (f"{getattr(obj, '__module__', '')}."
+                     f"{getattr(obj, '__qualname__', '')}")
+            if "mediapipe" in where.lower():
+                return
+        except Exception:
+            return
+        if prev is not None:
+            prev(unraisable)
+
+    sys.unraisablehook = hook
+
+
 def main(argv: list[str] | None = None) -> int:
+    _silence_mediapipe_teardown()
     ap = argparse.ArgumentParser("idphoto", description="AI 증명사진 파이프라인")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
@@ -160,6 +253,9 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--approval", default=None,
                    help="금액 기준 초과 시 CK 승인 id")
     r.set_defaults(fn=cmd_run)
+
+    d = sub.add_parser("doctor", help="실행 준비 상태 점검")
+    d.set_defaults(fn=cmd_doctor)
 
     c = sub.add_parser("check", help="AI 생성 표시 확인")
     c.add_argument("photos", nargs="+")

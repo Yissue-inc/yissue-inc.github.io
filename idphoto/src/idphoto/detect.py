@@ -120,6 +120,21 @@ class MediaPipeLandmarker:
         except Exception:          # 런타임 라이브러리 부재 등 — 폴백으로 넘어간다
             self._lm = None
 
+    def close(self) -> None:
+        """명시적으로 닫는다. 닫은 뒤에는 annotate 가 폴백으로 동작한다.
+
+        인터프리터 종료 시점의 정리는 여기서 하지 않는다 — MediaPipe 의
+        __del__ 이 어차피 한 번 더 닫으려 하고, 그때는 내부 실행기가 이미
+        내려가 있어 예외가 난다. 그 소음은 cli 에서 unraisable 훅으로 거른다.
+        """
+        lm, self._lm = self._lm, None
+        self.available = False
+        if lm is not None:
+            try:
+                lm.close()
+            except Exception:
+                pass
+
     def annotate(self, bgr: np.ndarray, geo: FaceGeometry) -> bool:
         """geo.chin / geo.landmarks 를 채운다. 성공하면 True."""
         if not self.available:
