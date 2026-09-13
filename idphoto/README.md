@@ -15,7 +15,22 @@ python -m idphoto run   photo*.jpg --spec id_kr --n 12 --out out/order
 python -m idphoto check out/order/*.jpg     # AI 생성 표시 확인
 ```
 
-Gemini 로 실제 생성하려면 — **키는 `ai_keys` 프로토콜로만 받는다**:
+### API 없이 프롬프트만 시험하기 (테스트 단계 권장)
+
+생성 API 는 **배치 자동화**에 필요한 것이지, 프롬프트가 좋은지 보는 데는 필요 없다.
+웹 UI(Gemini·ChatGPT 등)에 프롬프트를 붙여넣어 손으로 만들고, 결과를 되가져오면
+파이프라인이 똑같이 측정한다.
+
+```bash
+python -m idphoto prompt --variant measured        # 붙여넣을 프롬프트 출력
+# → 웹 UI 에 사진 + 프롬프트를 넣고 결과 저장
+python -m idphoto measure result.jpg --refs 원본*.jpg   # 유사도·규격·피부톤 측정
+```
+
+API 가 추가로 주는 것은 40장 배치, 자동 QA 게이트, MMR 다양성 선발, 원가 집계다.
+프롬프트를 고르는 단계에서는 없어도 된다.
+
+### Gemini 로 자동 생성하려면 — **키는 `ai_keys` 프로토콜로만 받는다**:
 
 ```bash
 # 1) 파일럿 1장으로 실제 비용을 잰다 (추측 금액 금지)

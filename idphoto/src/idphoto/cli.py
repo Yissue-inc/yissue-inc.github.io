@@ -132,6 +132,87 @@ def cmd_check(args) -> int:
     return 0
 
 
+def cmd_prompt(args) -> int:
+    """프롬프트를 그대로 출력한다.
+
+    웹 UI(Gemini·ChatGPT 등)에 붙여넣어 손으로 생성해 볼 때 쓴다. API 없이
+    프롬프트 효과를 확인하는 가장 빠른 경로다 — 결과 이미지를 되가져오면
+    파이프라인이 유사도·규격·피부톤을 그대로 측정한다.
+    """
+    from . import prompts
+
+    preset = prompts.Preset("cli", args.wardrobe, args.backdrop, args.lighting)
+    for variant in ([args.variant] if args.variant else list(prompts.VARIANTS)):
+        print(f"\n{'=' * 64}\n[{variant}]  {args.wardrobe} / {args.backdrop}\n{'=' * 64}")
+        print(prompts.build(preset, variant))
+    return 0
+
+
+def cmd_measure(args) -> int:
+    """손으로 만든 결과물을 파이프라인 지표로 채점한다.
+
+    웹 UI 로 생성한 이미지든 다른 서비스 출력이든, 참조 사진만 있으면
+    유사도·규격·피부톤을 같은 기준으로 잰다. API 없이 프롬프트 효과를
+    비교하는 경로다.
+    """
+    import numpy as np
+
+    from .config import DEFAULT
+    from .detect import FaceAnalyzer
+    from .framing import frame_to_spec
+    from .identity import IdentityEncoder
+    from .specs import get_spec
+    from . import qa
+
+    an, enc = FaceAnalyzer(), IdentityEncoder()
+    refs = _load(args.refs)
+    if not refs:
+        print("참조 사진을 읽지 못했습니다", file=sys.stderr)
+        return 1
+
+    embs, skins = [], []
+    for path, img in refs:
+        faces = an.analyze(img)
+        if not faces:
+            print(f"  참조 {Path(path).name}: 얼굴 검출 실패 — 건너뜀", file=sys.stderr)
+            continue
+        embs.append(enc.embed(img, faces[0]))
+        skins.append(qa._skin_lab(img, faces[0]))
+    if not embs:
+        print("참조 사진에서 얼굴을 찾지 못했습니다", file=sys.stderr)
+        return 1
+
+    reference = enc.reference(embs)
+    ref_skin = tuple(float(np.median([s[i] for s in skins])) for i in range(3))
+    spec = get_spec(args.spec)
+    print(f"참조 {len(embs)}장 · 상호 최소 유사도 {enc.spread(embs):.3f}")
+    print(f"{'파일':24s} {'유사도':>7s} {'머리mm':>7s} {'Δchroma':>8s} {'ΔL*':>7s} "
+          f"{'선명도':>7s} {'점수':>7s}  판정")
+
+    for path, img in _load(args.photos):
+        faces = an.analyze(img)
+        if not faces:
+            print(f"{Path(path).name:24s} {'얼굴 검출 실패':>40s}")
+            continue
+        geo = faces[0]
+        try:
+            fr = frame_to_spec(img, geo, spec)
+        except ValueError:
+            fr = None
+        c = qa.Candidate(variant_id=Path(path).name, image=img, face=geo,
+                         embedding=enc.embed(img, geo), framing=fr)
+        qa.evaluate(c, reference, ref_skin, DEFAULT.qa)
+        verdict = "통과" if c.rejected is None else c.rejected
+        head = f"{fr.head_mm:.1f}" if fr else "-"
+        print(f"{Path(path).name:24s} {c.id_cos:>7.3f} {head:>7s} "
+              f"{c.skin_chroma_shift:>8.1f} {c.skin_delta_L:>+7.1f} "
+              f"{c.quality:>7.3f} {c.score:>7.3f}  {verdict}")
+
+    print(f"\n기준선 — 인핸즈 출력 유사도 0.646~0.674 / 게이트 {DEFAULT.qa.tau_id} "
+          f"/ 목표 {DEFAULT.qa.tau_id_target}")
+    return 0
+
+
 def cmd_doctor(args) -> int:
     """실행 준비 상태 점검. 생성 호출 전에 막힐 곳을 미리 찾는다."""
     import requests
@@ -258,6 +339,19 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--approval", default=None,
                    help="금액 기준 초과 시 CK 승인 id")
     r.set_defaults(fn=cmd_run)
+
+    ms = sub.add_parser("measure", help="손으로 만든 결과물을 지표로 채점")
+    ms.add_argument("photos", nargs="+", help="채점할 결과 이미지")
+    ms.add_argument("--refs", nargs="+", required=True, help="참조(원본) 사진")
+    ms.add_argument("--spec", default="id_kr", choices=sorted(SPECS))
+    ms.set_defaults(fn=cmd_measure)
+
+    pr = sub.add_parser("prompt", help="프롬프트 출력 (웹 UI 에 붙여넣기용)")
+    pr.add_argument("--variant", default=None, help="baseline·lock·measured (생략 시 전부)")
+    pr.add_argument("--wardrobe", default="suit_navy")
+    pr.add_argument("--backdrop", default="white")
+    pr.add_argument("--lighting", default="studio_3pt")
+    pr.set_defaults(fn=cmd_prompt)
 
     d = sub.add_parser("doctor", help="실행 준비 상태 점검")
     d.set_defaults(fn=cmd_doctor)
