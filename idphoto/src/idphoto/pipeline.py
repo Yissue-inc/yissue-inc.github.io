@@ -18,6 +18,7 @@ from .config import Config, DEFAULT
 from .detect import FaceAnalyzer
 from .framing import frame_to_spec
 from .generate import GenerationRequest, get_provider
+from .generate.models import ModelSpec, resolve as resolve_models
 from .identity import IdentityEncoder
 from . import retouch as retouch_mod
 from .retouch import RetouchSettings
@@ -53,16 +54,37 @@ class OrderResult:
 
 class Pipeline:
     def __init__(self, provider: str = "mock", config: Config | None = None,
-                 model: str | None = None, **provider_kwargs):
+                 model: str | None = None, models: list[str] | None = None,
+                 **provider_kwargs):
         self.cfg = config or DEFAULT
         self.analyzer = FaceAnalyzer()
         self.encoder = IdentityEncoder()
-        kw = dict(provider_kwargs)
+        self._kw = dict(provider_kwargs)
+        self._provider_name = provider
         if provider == "mock":
-            kw.setdefault("analyzer", self.analyzer)
-        if model:
-            kw["model"] = model
-        self.provider = get_provider(provider, **kw)
+            self._kw.setdefault("analyzer", self.analyzer)
+
+        # 모델 하나 또는 여러 개. 여러 개면 생성을 라운드로빈으로 나눈다.
+        self.specs: list[ModelSpec] = []
+        if provider != "mock":
+            names = models or ([model] if model else None)
+            self.specs = resolve_models(names)
+
+        self._providers = {}
+        if self.specs:
+            for s in self.specs:
+                self._providers[s.id] = get_provider(provider, **{**self._kw, "model": s.id})
+            self.provider = self._providers[self.specs[0].id]
+        else:
+            if model:
+                self._kw["model"] = model
+            self.provider = get_provider(provider, **self._kw)
+
+    def _provider_for(self, i: int):
+        """i 번째 생성이 쓸 프로바이더. 모델이 여러 개면 라운드로빈."""
+        if not self.specs:
+            return self.provider
+        return self._providers[self.specs[i % len(self.specs)].id]
 
     # ---- S0~S2 -------------------------------------------------------
     def prepare(self, images: list[np.ndarray]) -> tuple[np.ndarray, tuple, list, float]:
@@ -96,7 +118,8 @@ class Pipeline:
         n_out = n_present or self.cfg.qa.n_present
 
         res = OrderResult(order_id=uuid.uuid4().hex[:12], spec=spec,
-                          provider=self.provider.name, model=self.provider.model)
+                          provider=self.provider.name,
+                 model=",".join(s.id for s in self.specs) or self.provider.model)
 
         reference, ref_skin, res.gates, res.reference_spread = self.prepare(images)
         if res.reference_spread < self.cfg.gate.reference_spread_min:
@@ -110,7 +133,8 @@ class Pipeline:
 
         for i in range(n_gen):
             preset = grid[i % len(grid)]
-            gen = self.provider.generate(GenerationRequest(
+            provider = self._provider_for(i)
+            gen = provider.generate(GenerationRequest(
                 references=refs, preset=preset, prompt=prompts.build(preset),
                 seed=seed + i))
             res.cost_usd += gen.cost_usd
@@ -124,6 +148,7 @@ class Pipeline:
             cand = self._postprocess(gen.image, preset, spec, retouch, seed + i,
                                      f"{res.order_id}-{i:03d}")
             if cand is not None:
+                cand.model = gen.model
                 res.candidates.append(
                     qa.evaluate(cand, reference, ref_skin, self.cfg.qa))
 

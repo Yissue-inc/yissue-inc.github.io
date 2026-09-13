@@ -26,6 +26,7 @@ class Candidate:
     variant_id: str
     image: np.ndarray                      # 규격 크롭 완료된 BGR
     preset: dict = field(default_factory=dict)   # 의상/배경/헤어 등
+    model: str = ""                        # 이 후보를 만든 생성 모델
     face: FaceGeometry | None = None
     embedding: np.ndarray | None = None
     framing: FramingResult | None = None
@@ -204,8 +205,21 @@ def summarize(cands: list[Candidate]) -> dict:
     for c in cands:
         if c.rejected:
             reasons[c.rejected.split(" (")[0]] = reasons.get(c.rejected.split(" (")[0], 0) + 1
+    per_model: dict[str, dict] = {}
+    for c in cands:
+        m = per_model.setdefault(c.model or "-", {"n": 0, "passed": 0, "cos": []})
+        m["n"] += 1
+        m["passed"] += c.rejected is None
+        m["cos"].append(c.id_cos)
+    for m in per_model.values():
+        arr = np.array(m.pop("cos") or [0.0])
+        m["pass_rate"] = round(m["passed"] / m["n"], 3) if m["n"] else 0.0
+        m["id_cos_mean"] = round(float(arr.mean()), 4)
+        m["id_cos_max"] = round(float(arr.max()), 4)
+
     return {
         "generated": len(cands),
+        "by_model": per_model,
         "passed": len(passed),
         "pass_rate": len(passed) / len(cands) if cands else 0.0,
         "id_cos_mean": float(cos.mean()),

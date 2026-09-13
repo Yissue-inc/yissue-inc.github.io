@@ -75,7 +75,8 @@ def cmd_run(args) -> int:
             [args.wardrobe] if args.wardrobe else None,
             [args.backdrop] if args.backdrop else None)
 
-    pipe = Pipeline(provider=args.provider, model=args.model)
+    models = [m.strip() for m in args.models.split(",")] if args.models else None
+    pipe = Pipeline(provider=args.provider, model=args.model, models=models)
     try:
         res = pipe.run([img for _, img in loaded], spec_key=args.spec,
                        n_generate=args.n, n_present=args.present,
@@ -90,11 +91,21 @@ def cmd_run(args) -> int:
         summary["est_usd_next_run"] = round(
             res.cost_usd / max(1, summary["generated"]) * args.n, 4)
     print(json.dumps(summary, ensure_ascii=False, indent=2))
+    by_model = summary.get("by_model", {})
+    if len(by_model) > 1:
+        print("\n모델별 비교")
+        print(f"  {'모델':30s} {'생성':>4s} {'통과':>4s} {'통과율':>7s} {'유사도평균':>10s} {'최고':>7s}")
+        for name, m in sorted(by_model.items(),
+                              key=lambda kv: -kv[1]["id_cos_mean"]):
+            print(f"  {name:30s} {m['n']:>4d} {m['passed']:>4d} "
+                  f"{m['pass_rate']:>7.2f} {m['id_cos_mean']:>10.3f} {m['id_cos_max']:>7.3f}")
+
     print("\n선발 결과")
     for rank, c in enumerate(res.selected, 1):
         fr = c.framing
         print(f"  {rank}. {c.variant_id}  점수 {c.score:.3f}  유사도 {c.id_cos:.3f}  "
-              f"머리 {fr.head_mm:.1f}mm  {c.preset['wardrobe']}/{c.preset['backdrop']}")
+              f"머리 {fr.head_mm:.1f}mm  {c.preset['wardrobe']}/{c.preset['backdrop']}"
+              + (f"  [{c.model}]" if c.model else ""))
 
     if res.candidates and not res.selected:
         print("\n통과한 후보가 없습니다. 탈락 사유:")
@@ -130,7 +141,9 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("photos", nargs="+")
     r.add_argument("--spec", default="id_kr", choices=sorted(SPECS))
     r.add_argument("--provider", default="mock", choices=["mock", "gemini"])
-    r.add_argument("--model", default=None, help="프로바이더 모델 ID")
+    r.add_argument("--model", default=None, help="프로바이더 모델 ID (단일)")
+    r.add_argument("--models", default=None,
+                   help="쉼표 구분 모델 목록 — 생성을 라운드로빈으로 나눠 비교한다")
     r.add_argument("--n", type=int, default=12, help="생성 장수")
     r.add_argument("--present", type=int, default=5, help="노출 장수")
     r.add_argument("--retouch", type=float, default=0.5, help="보정 강도 0..1")
