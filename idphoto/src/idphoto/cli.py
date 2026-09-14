@@ -148,6 +148,135 @@ def cmd_check(args) -> int:
     return 0
 
 
+def cmd_overlay(args) -> int:
+    """원본과 후보를 눈 위치로 정렬해 윤곽을 겹쳐 본다.
+
+    품질 기준 §5 가 요구하는 사람 검사다. 자동 검사는 6~12% 수준의 미세한
+    얼굴 깎기를 확실히 잡지 못하므로, 이 이미지를 보고 판단해야 한다.
+    턱선에서 원본 윤곽(초록)이 후보 윤곽(빨강) 바깥에 있으면 깎인 것이다.
+    """
+    from .detect import FaceAnalyzer
+    from .overlay import compare
+
+    an = FaceAnalyzer()
+    refs = _load(args.refs)
+    if not refs:
+        print("참조 사진을 읽지 못했습니다", file=sys.stderr)
+        return 1
+    ref_path, ref_img = refs[0]
+    ref_faces = an.analyze(ref_img)
+    if not ref_faces:
+        print(f"참조 {Path(ref_path).name}: 얼굴 검출 실패", file=sys.stderr)
+        return 1
+
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    n = 0
+    for path, img in _load(args.photos):
+        faces = an.analyze(img)
+        if not faces:
+            print(f"  {Path(path).name}: 얼굴 검출 실패 — 건너뜀", file=sys.stderr)
+            continue
+        strip = compare(ref_img, ref_faces[0], img, faces[0])
+        dst = out / f"overlay_{Path(path).stem}.png"
+        cv2.imwrite(str(dst), strip)
+        print(f"  {dst}")
+        n += 1
+
+    print(f"\n{n}장 생성. 3번 패널의 턱선·볼 라인만 보세요 — "
+          f"초록(원본)이 빨강(후보) 바깥이면 얼굴이 깎인 것입니다.")
+    return 0
+
+
+def cmd_calibrate(args) -> int:
+    """사람 판정으로 임계값을 되맞춘다.
+
+    catalog 가 낸 scores.csv 에 `human` 열을 채워서 넘기면(pass/fail),
+    자동 판정과 어디서 갈리는지, 각 지표를 어디서 끊어야 사람 판단과
+    가장 잘 맞는지를 알려준다.
+
+    기준을 감으로 고치지 않기 위한 도구다 — 사람의 눈이 정답이고,
+    임계값이 그걸 따라가야 한다.
+    """
+    import csv
+
+    import numpy as np
+
+    rows = []
+    with open(args.scores, newline="", encoding="utf-8") as fh:
+        for r in csv.DictReader(fh):
+            h = (r.get("human") or "").strip().lower()
+            if h in ("pass", "1", "o", "y", "yes", "ok"):
+                r["_human"] = True
+            elif h in ("fail", "0", "x", "n", "no"):
+                r["_human"] = False
+            else:
+                continue
+            rows.append(r)
+
+    if len(rows) < 4:
+        print(f"라벨된 행이 {len(rows)}개뿐입니다. scores.csv 의 human 열에 "
+              f"pass/fail 을 채워 주세요 (최소 4개, 양쪽 다 있어야 함).",
+              file=sys.stderr)
+        return 1
+
+    human = np.array([r["_human"] for r in rows])
+    auto = np.array([(r.get("verdict") or "") != "fail" for r in rows])
+    agree = float((human == auto).mean())
+
+    print(f"라벨 {len(rows)}개 (사람 통과 {int(human.sum())} / 탈락 {int((~human).sum())})")
+    print(f"자동 판정과 일치율 {agree * 100:.0f}%\n")
+
+    disagree = [(r, h, a) for r, h, a in zip(rows, human, auto) if h != a]
+    if disagree:
+        print("불일치 — 이 사진들이 기준을 고칠 근거입니다")
+        for r, h, a in disagree:
+            direction = "자동은 통과시켰는데 사람이 탈락" if a and not h \
+                else "자동은 탈락시켰는데 사람이 통과"
+            print(f"  {r.get('file', '?'):30s} cos {r.get('id_cos', '?'):>7s}  "
+                  f"{direction}")
+        print()
+
+    # --- 지표별로 사람 판단을 가장 잘 가르는 임계값 ---
+    metrics = [("id_cos", True), ("score", True), ("sharpness", True),
+               ("chroma_shift", False), ("head_mm", None)]
+    print(f"{'지표':14s} {'방향':>6s} {'최적 임계값':>11s} {'균형정확도':>10s}  현재 설정")
+    from .config import DEFAULT
+    current = {"id_cos": DEFAULT.qa.tau_id, "chroma_shift": DEFAULT.qa.max_skin_chroma_shift}
+
+    for name, higher_is_pass in metrics:
+        vals = []
+        for r in rows:
+            try:
+                vals.append(float(r.get(name) or "nan"))
+            except ValueError:
+                vals.append(float("nan"))
+        v = np.array(vals)
+        ok = ~np.isnan(v)
+        if ok.sum() < 4 or higher_is_pass is None:
+            continue
+        best, best_acc = None, 0.0
+        for t in np.unique(v[ok]):
+            pred = (v >= t) if higher_is_pass else (v <= t)
+            tp = float((pred & human & ok).sum()); tn = float((~pred & ~human & ok).sum())
+            p = float((human & ok).sum()); n = float((~human & ok).sum())
+            if p == 0 or n == 0:
+                continue
+            acc = 0.5 * (tp / p + tn / n)
+            if acc > best_acc:
+                best, best_acc = float(t), acc
+        if best is None:
+            continue
+        cur = current.get(name)
+        cur_s = f"{cur}" if cur is not None else "-"
+        arrow = "이상" if higher_is_pass else "이하"
+        print(f"{name:14s} {arrow:>6s} {best:>11.3f} {best_acc * 100:>9.0f}%  {cur_s}")
+
+    print("\n※ 균형정확도가 80% 미만인 지표는 사람 판단을 설명하지 못합니다 —")
+    print("   그 축은 기준에서 빼거나, 사람이 실제로 보는 다른 것을 찾아야 합니다.")
+    return 0
+
+
 def cmd_catalog(args) -> int:
     """폴더 전체를 채점해 순위를 매기고 컨택트 시트를 만든다.
 
@@ -224,11 +353,11 @@ def cmd_catalog(args) -> int:
 
     with open(out / "scores.csv", "w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
-        w.writerow(["rank", "file", "verdict", "id_cos", "score", "head_mm",
-                    "chroma_shift", "delta_L", "sharpness", "note"])
+        w.writerow(["rank", "file", "verdict", "human", "id_cos", "score",
+                    "head_mm", "chroma_shift", "delta_L", "sharpness", "note"])
         for e in scored:
             c = e["cand"]
-            w.writerow([e["rank"], Path(e["path"]).name, e["verdict"],
+            w.writerow([e["rank"], Path(e["path"]).name, e["verdict"], "",
                         f"{e['id_cos']:.4f}", f"{e['score']:.4f}",
                         f"{c.framing.head_mm:.1f}" if c and c.framing else "",
                         f"{c.skin_chroma_shift:.1f}" if c else "",
@@ -463,6 +592,16 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--approval", default=None,
                    help="금액 기준 초과 시 CK 승인 id")
     r.set_defaults(fn=cmd_run)
+
+    ov = sub.add_parser("overlay", help="원본과 정렬해 윤곽 겹쳐보기 (골격 검사)")
+    ov.add_argument("photos", nargs="+", help="후보 이미지")
+    ov.add_argument("--refs", nargs="+", required=True, help="참조(원본) 사진")
+    ov.add_argument("--out", default="out/overlay")
+    ov.set_defaults(fn=cmd_overlay)
+
+    cal = sub.add_parser("calibrate", help="사람 판정으로 임계값 되맞추기")
+    cal.add_argument("scores", help="human 열을 채운 scores.csv")
+    cal.set_defaults(fn=cmd_calibrate)
 
     cat = sub.add_parser("catalog", help="폴더 전체 채점 + 컨택트 시트 생성")
     cat.add_argument("photos", nargs="+", help="후보 이미지 (글롭 가능)")
