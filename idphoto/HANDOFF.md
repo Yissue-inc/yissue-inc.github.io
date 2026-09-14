@@ -247,6 +247,7 @@ atexit 으로 닫아봤더니 **더 나빠졌습니다**(마지막 참조가 사
 | `docs/key-access.md` | 키 취급 규칙 + 여기서 저지른 실수 3가지 |
 | `docs/reference-calibration.md` | 인핸즈 실측으로 잡은 버그 3개, 확정 임계값 |
 | `docs/fact-check.md` | 계획서 v1.0 정정 6건 (라이선스·규격·AI기본법·모델 단가) |
+| `docs/quality-standards.md` | **실사/미화 두 등급 판정 기준 + 프롬프트** |
 | `docs/retouch-calibration.md` | 리터칭 단계별 아이덴티티 비용 실측 |
 | `models/LICENSES.md` | 모델 라이선스와 배제 사유 |
 | `../docs/ai-id-photo-service-plan.md` | 최초 서비스 기획서 (일부는 fact-check 로 정정됨) |
