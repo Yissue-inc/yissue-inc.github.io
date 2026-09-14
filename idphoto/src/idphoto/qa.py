@@ -38,6 +38,8 @@ class Candidate:
     spec_score: float = 0.0
     aesthetic: float = 0.0
     neutrality: float = 0.0
+    studio: float = 0.0                    # 스튜디오 증명사진다움
+    studio_detail: dict = field(default_factory=dict)
     skin_delta_L: float = 0.0
     skin_chroma_shift: float = 0.0
     score: float = 0.0
@@ -109,6 +111,52 @@ def _neutrality(geo: FaceGeometry) -> float:
     return float(0.45 * yaw + 0.35 * pitch + 0.20 * roll)
 
 
+def _studio_score(bgr: np.ndarray, geo: FaceGeometry) -> tuple[float, dict]:
+    """0..1 — '스튜디오에서 찍은 증명사진처럼 보이는가'.
+
+    이 지표를 넣기 전에는 순위가 유사도에 지배되어, 원본 셀카와 거친 조명의
+    합성물이 제대로 된 증명사진보다 위에 왔다. 본인 같기만 하면 1등이었다.
+    상품으로 팔 수 있는지는 그것만으로 정해지지 않는다.
+
+    측정 가능한 두 가지를 본다. 의상 격식은 분류기 없이는 잴 수 없어 제외했다.
+
+      배경 균일도 — 스튜디오 페이퍼는 균일하다. 실측(레퍼런스 서비스):
+                    좌우 가장자리 L* 252~254, 표준편차 1 미만.
+      조명 균일도 — 소프트박스는 좌우 밝기 차와 그림자 경계가 작다.
+                    측광 셀카는 한쪽 뺨이 통째로 어둡다.
+    """
+    h, w = bgr.shape[:2]
+    lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB).astype(np.float32)
+    L = lab[:, :, 0]
+
+    # --- 배경: 어깨선 위 좌우 띠 ---
+    side = max(3, int(w * 0.05))
+    upper = int(h * 0.45)
+    band = np.concatenate([L[:upper, :side].ravel(), L[:upper, -side:].ravel()])
+    bg_std = float(np.std(band)) if band.size else 99.0
+    # 실측 기준 std<=3 이면 만점, 25 이상이면 0점
+    bg_uniform = float(np.clip((25.0 - bg_std) / 22.0, 0.0, 1.0))
+
+    # 배경이 어두우면 증명사진 배경이 아니다(실내 벽·야외)
+    bg_bright = float(np.clip((np.median(band) - 120.0) / 100.0, 0.0, 1.0)) \
+        if band.size else 0.0
+
+    # --- 조명: 얼굴 좌우 밝기 차 ---
+    x, y, bw, bh = geo.box
+    x0, y0 = max(0, int(x)), max(0, int(y + bh * 0.20))
+    x1, y1 = min(w, int(x + bw)), min(h, int(y + bh * 0.85))
+    face = L[y0:y1, x0:x1]
+    if face.size == 0:
+        return 0.0, {"bg_std": bg_std, "lr_delta": 99.0}
+    mid = face.shape[1] // 2
+    lr_delta = abs(float(np.median(face[:, :mid])) - float(np.median(face[:, mid:])))
+    # 좌우 차 5 이하면 만점, 45 이상이면 0점 (L* 0..255 스케일)
+    even = float(np.clip((45.0 - lr_delta) / 40.0, 0.0, 1.0))
+
+    score = 0.45 * bg_uniform + 0.20 * bg_bright + 0.35 * even
+    return score, {"bg_std": round(bg_std, 1), "lr_delta": round(lr_delta, 1)}
+
+
 def _spec_score(fr: FramingResult | None) -> float:
     """규격 적합도 0..1. 머리 길이가 허용 범위 중앙에 가까울수록 높다."""
     if fr is None:
@@ -138,6 +186,7 @@ def evaluate(cand: Candidate, reference: np.ndarray,
     cand.quality = _sharpness_score(cand.image)
     cand.spec_score = _spec_score(cand.framing)
     cand.neutrality = _neutrality(cand.face)
+    cand.studio, cand.studio_detail = _studio_score(cand.image, cand.face)
     sym = _eye_symmetry(cand.face)
     cand.aesthetic = float(0.5 * sym + 0.3 * cand.quality + 0.2 * cand.neutrality)
     ref_lab = ref_skin if isinstance(ref_skin, tuple) else (ref_skin, 0.0, 0.0)
@@ -157,8 +206,13 @@ def evaluate(cand: Candidate, reference: np.ndarray,
         cand.rejected = f"피부 색조 이동 과다 (Δchroma {cand.skin_chroma_shift:.1f})"
     elif abs(cand.skin_delta_L) > cfg.max_skin_delta_L:
         cand.rejected = f"피부 밝기 이동 극단 (ΔL* {cand.skin_delta_L:+.1f})"
+    elif cand.studio < cfg.min_studio:
+        cand.rejected = (f"스튜디오 사진 아님 (studio {cand.studio:.2f}, "
+                         f"배경std {cand.studio_detail.get('bg_std')}, "
+                         f"좌우차 {cand.studio_detail.get('lr_delta')})")
 
     cand.score = (cfg.w_identity * cand.id_cos
+                  + cfg.w_studio * cand.studio
                   + cfg.w_quality * cand.quality
                   + cfg.w_spec * cand.spec_score
                   + cfg.w_aesthetic * cand.aesthetic

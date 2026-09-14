@@ -85,11 +85,21 @@ class QAConfig:
     max_skin_delta_L: float = 45.0       # 극단적 표백만 걸러내는 넓은 상한
 
     # 스코어 가중치 — 합이 1.0
-    w_identity: float = 0.40
-    w_quality: float = 0.20
-    w_spec: float = 0.15
-    w_aesthetic: float = 0.15
-    w_neutral: float = 0.10
+    #
+    # w_studio 를 넣기 전에는 순위가 유사도에 지배되어, 원본 셀카와 거친
+    # 조명의 합성물이 제대로 된 증명사진보다 위에 왔다(컨택트 시트로 확인).
+    # '본인 같음'과 '증명사진다움'은 둘 다 필요하고, 어느 하나만으로는
+    # 상품이 되지 않는다.
+    w_identity: float = 0.34
+    w_studio: float = 0.22
+    w_quality: float = 0.14
+    w_spec: float = 0.13
+    w_aesthetic: float = 0.10
+    w_neutral: float = 0.07
+
+    #: 스튜디오 증명사진으로 볼 수 있는 최소선. 이보다 낮으면 배경이나 조명이
+    #: 증명사진의 것이 아니므로 상품이 될 수 없다 — 유사도가 아무리 높아도.
+    min_studio: float = 0.45
 
     # 다양성 선발 (MMR). 1.0이면 순수 점수순, 0에 가까울수록 다양성 우선.
     mmr_lambda: float = 0.72

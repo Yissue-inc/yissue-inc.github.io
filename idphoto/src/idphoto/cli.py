@@ -132,6 +132,118 @@ def cmd_check(args) -> int:
     return 0
 
 
+def cmd_catalog(args) -> int:
+    """폴더 전체를 채점해 순위를 매기고 컨택트 시트를 만든다.
+
+    후보가 수십 장일 때 한 장씩 보는 대신, 격자 한 장에 순위·유사도·판정을
+    새겨 한눈에 고를 수 있게 한다. 상위 N장은 따로 크게 붙인다.
+    """
+    import csv
+
+    import numpy as np
+
+    from .config import DEFAULT
+    from .detect import FaceAnalyzer
+    from .framing import frame_to_spec
+    from .identity import IdentityEncoder
+    from .sheet import contact_sheet, strip
+    from .specs import get_spec
+    from . import qa
+
+    an, enc = FaceAnalyzer(), IdentityEncoder()
+    refs = _load(args.refs)
+    embs, skins = [], []
+    for path, img in refs:
+        faces = an.analyze(img)
+        if faces:
+            embs.append(enc.embed(img, faces[0]))
+            skins.append(qa._skin_lab(img, faces[0]))
+    if not embs:
+        print("참조 사진에서 얼굴을 찾지 못했습니다", file=sys.stderr)
+        return 1
+    reference = enc.reference(embs)
+    ref_skin = tuple(float(np.median([s[i] for s in skins])) for i in range(3))
+    spec = get_spec(args.spec)
+
+    photos = []
+    for pattern in args.photos:
+        photos.extend(sorted(Path().glob(pattern)) if any(c in pattern for c in "*?[")
+                      else [Path(pattern)])
+    files = [str(p) for p in photos if p.is_file()]
+    if not files:
+        print("채점할 사진이 없습니다", file=sys.stderr)
+        return 1
+
+    scored = []
+    for path, img in _load(files):
+        faces = an.analyze(img)
+        if not faces:
+            scored.append({"path": path, "image": img, "id_cos": 0.0,
+                           "score": 0.0, "verdict": "fail",
+                           "note": "no face", "cand": None})
+            continue
+        geo = faces[0]
+        try:
+            fr = frame_to_spec(img, geo, spec)
+        except ValueError:
+            fr = None
+        c = qa.Candidate(variant_id=Path(path).name, image=img, face=geo,
+                         embedding=enc.embed(img, geo), framing=fr)
+        qa.evaluate(c, reference, ref_skin, DEFAULT.qa)
+        if c.rejected:
+            verdict, note = "fail", c.rejected.split(" (")[0]
+        elif c.id_cos < DEFAULT.qa.tau_id_target:
+            verdict, note = "near", f"below target {DEFAULT.qa.tau_id_target}"
+        else:
+            verdict, note = "pass", ""
+        scored.append({"path": path, "image": img, "id_cos": c.id_cos,
+                       "score": c.score, "verdict": verdict, "note": note,
+                       "cand": c})
+
+    scored.sort(key=lambda e: (e["verdict"] == "fail", -e["score"]))
+    for i, e in enumerate(scored, 1):
+        e["rank"] = i
+
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    cv2.imwrite(str(out / "contact_sheet.png"), contact_sheet(scored, cols=args.cols))
+    top = scored[:args.top]
+    cv2.imwrite(str(out / f"top{len(top)}.png"), strip(top))
+
+    with open(out / "scores.csv", "w", newline="", encoding="utf-8") as fh:
+        w = csv.writer(fh)
+        w.writerow(["rank", "file", "verdict", "id_cos", "score", "head_mm",
+                    "chroma_shift", "delta_L", "sharpness", "note"])
+        for e in scored:
+            c = e["cand"]
+            w.writerow([e["rank"], Path(e["path"]).name, e["verdict"],
+                        f"{e['id_cos']:.4f}", f"{e['score']:.4f}",
+                        f"{c.framing.head_mm:.1f}" if c and c.framing else "",
+                        f"{c.skin_chroma_shift:.1f}" if c else "",
+                        f"{c.skin_delta_L:+.1f}" if c else "",
+                        f"{c.quality:.3f}" if c else "", e["note"]])
+
+    n_pass = sum(e["verdict"] == "pass" for e in scored)
+    n_near = sum(e["verdict"] == "near" for e in scored)
+    print(f"채점 {len(scored)}장 — 통과 {n_pass} · 목표미달 {n_near} · "
+          f"탈락 {len(scored) - n_pass - n_near}")
+    print(f"참조 {len(embs)}장 · 상호 최소 유사도 {enc.spread(embs):.3f}\n")
+    print(f"{'순위':>4s} {'파일':26s} {'판정':>6s} {'유사도':>7s} {'종합':>7s} "
+          f"{'머리mm':>7s} {'Δchroma':>8s}  비고")
+    for e in scored[:args.top * 2]:
+        c = e["cand"]
+        head = f"{c.framing.head_mm:.1f}" if c and c.framing else "-"
+        chroma = f"{c.skin_chroma_shift:.1f}" if c else "-"
+        print(f"{e['rank']:>4d} {Path(e['path']).name[:26]:26s} {e['verdict']:>6s} "
+              f"{e['id_cos']:>7.3f} {e['score']:>7.3f} {head:>7s} {chroma:>8s}  {e['note']}")
+
+    print(f"\n기준선 — 인핸즈 0.646~0.674 / 게이트 {DEFAULT.qa.tau_id} "
+          f"/ 목표 {DEFAULT.qa.tau_id_target}")
+    print(f"\n저장: {out}/contact_sheet.png · {out}/top{len(top)}.png · {out}/scores.csv")
+    print("→ contact_sheet.png 와 top 이미지를 Claude 에게 올리면 함께 고를 수 있습니다.")
+    return 0
+
+
 def cmd_prompt(args) -> int:
     """프롬프트를 그대로 출력한다.
 
@@ -339,6 +451,15 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--approval", default=None,
                    help="금액 기준 초과 시 CK 승인 id")
     r.set_defaults(fn=cmd_run)
+
+    cat = sub.add_parser("catalog", help="폴더 전체 채점 + 컨택트 시트 생성")
+    cat.add_argument("photos", nargs="+", help="후보 이미지 (글롭 가능)")
+    cat.add_argument("--refs", nargs="+", required=True, help="참조(원본) 사진")
+    cat.add_argument("--spec", default="id_kr", choices=sorted(SPECS))
+    cat.add_argument("--top", type=int, default=12, help="크게 뽑을 상위 장수")
+    cat.add_argument("--cols", type=int, default=6, help="시트 열 수")
+    cat.add_argument("--out", default="out/catalog")
+    cat.set_defaults(fn=cmd_catalog)
 
     ms = sub.add_parser("measure", help="손으로 만든 결과물을 지표로 채점")
     ms.add_argument("photos", nargs="+", help="채점할 결과 이미지")
