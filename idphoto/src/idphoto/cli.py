@@ -24,9 +24,25 @@ from .specs import SPECS
 _LEVEL = {"ok": "✓", "warn": "!", "reject": "✗"}
 
 
+def _expand(patterns: list[str]) -> list[str]:
+    """글롭 패턴을 파일 목록으로 편다.
+
+    zsh 는 매치가 없으면 명령 자체를 실패시키므로(`no matches found`),
+    사용자가 패턴을 따옴표로 감싸 넘기는 경우를 지원해야 한다. 셸이 이미
+    펼친 경우에도 그대로 동작한다.
+    """
+    out: list[str] = []
+    for pat in patterns:
+        if any(c in pat for c in "*?["):
+            out.extend(str(p) for p in sorted(Path().glob(pat)) if p.is_file())
+        else:
+            out.append(pat)
+    return out
+
+
 def _load(paths: list[str]):
     out = []
-    for p in paths:
+    for p in _expand(paths):
         img = cv2.imread(p)
         if img is None:
             print(f"  읽기 실패: {p}", file=sys.stderr)
@@ -165,11 +181,7 @@ def cmd_catalog(args) -> int:
     ref_skin = tuple(float(np.median([s[i] for s in skins])) for i in range(3))
     spec = get_spec(args.spec)
 
-    photos = []
-    for pattern in args.photos:
-        photos.extend(sorted(Path().glob(pattern)) if any(c in pattern for c in "*?[")
-                      else [Path(pattern)])
-    files = [str(p) for p in photos if p.is_file()]
+    files = [f for f in _expand(args.photos) if Path(f).is_file()]
     if not files:
         print("채점할 사진이 없습니다", file=sys.stderr)
         return 1
